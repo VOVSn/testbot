@@ -1,0 +1,6 @@
+venv
+.env
+grades.txt
+log*
+test*
+materials/
