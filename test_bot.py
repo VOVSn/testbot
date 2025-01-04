@@ -7,8 +7,8 @@ from typing import Tuple, List
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
-    Application, CommandHandler, ContextTypes, CallbackContext,
-    CallbackQueryHandler, MessageHandler, filters
+    Application, CallbackContext, CallbackQueryHandler, CommandHandler,
+    ContextTypes, MessageHandler, filters
 )
 
 
@@ -213,26 +213,33 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     logger.error(f"Update {update} caused error {context.error}")
 
 
-# Main
-if __name__ == '__main__':
+# Main function to initialize the bot and run it
+def main():
     app = Application.builder().token(token).build()
 
     # Set teacher username in bot data
     app.bot_data['teacher_username'] = teacher_username
 
-    # Command handlers
-    app.add_handler(CommandHandler("start", start_command))
-    app.add_handler(CommandHandler("help", help_command))
-    app.add_handler(CommandHandler("materials", custom_command))
-    app.add_handler(CommandHandler("results", results_command))
+    # List of commands and their corresponding handlers
+    handlers = [
+        (CommandHandler("start", start_command)),
+        (CommandHandler("help", help_command)),
+        (CommandHandler("materials", custom_command)),
+        (CommandHandler("results", results_command)),
+        (CallbackQueryHandler(button_callback)),
+        (MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)),
+    ]
 
-    # Callback handler
-    app.add_handler(CallbackQueryHandler(button_callback))
+    # Add handlers to the application in a loop
+    for handler in handlers:
+        app.add_handler(handler)
 
-    # Message handler
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-   
+    # Error handler
     app.add_error_handler(error_handler)
 
     print("Starting polling...")
     app.run_polling(poll_interval=1)
+
+
+if __name__ == '__main__':
+    main()
