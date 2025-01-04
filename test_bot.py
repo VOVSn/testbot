@@ -33,9 +33,6 @@ formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
-# Conversation states
-STUDENT_NAME = range(1)
-
 
 # Load questions from CSV file
 def load_questions():
@@ -234,18 +231,7 @@ if __name__ == '__main__':
 
     # Message handler
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-
-    # Conversation handler
-    conversation_handler = ConversationHandler(
-        entry_points=[CommandHandler('start', start_command)],
-        states={
-            STUDENT_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)],
-        },
-        fallbacks=[],
-    )
-    app.add_handler(conversation_handler)
-
-    # Error  handler
+   
     app.add_error_handler(error_handler)
 
     print("Starting polling...")
