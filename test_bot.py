@@ -7,8 +7,8 @@ from typing import Tuple, List
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
-    Application, CommandHandler, MessageHandler, filters,
-    ContextTypes, CallbackContext, CallbackQueryHandler, ConversationHandler
+    Application, CommandHandler, ContextTypes, CallbackContext,
+    CallbackQueryHandler, MessageHandler, filters
 )
 
 
