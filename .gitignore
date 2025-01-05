@@ -1,6 +1,10 @@
 venv
 .env
-grades.txt
+grades*.txt
 log*
+*.log
 *.csv
 materials/
+tests/
+grades/
+_*
