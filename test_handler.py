@@ -2,24 +2,10 @@ import csv
 import os
 import random
 from typing import Tuple, List
+from datetime import datetime, timedelta, timezone
 
-from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import (
-    Application, CallbackContext, CallbackQueryHandler,
-    CommandHandler, MessageHandler, filters
-)
-
-from handlers import handle_message, error_handler
-from commands import materials_command, results_command
-
-load_dotenv()
-token = os.getenv('TOKEN')
-BOT_USERNAME = os.getenv('BOT_USERNAME')
-teacher_username = os.getenv('TEACHER_USERNAME')
-if not token or not BOT_USERNAME or not teacher_username:
-    print('Check .env')
-    exit()
+from telegram.ext import CallbackContext
 
 GRADES_FOLDER = 'grades'
 TESTS_FOLDER = 'tests'
@@ -105,12 +91,17 @@ async def display_results(query, context):
     total = context.user_data['test_results']['total']
     test_id = context.user_data['test_id']
     user_username = query.from_user.username
-    result_string = f"{user_username}: {correct} из {total}\n"
+    gmt_plus_3_timezone = timezone(timedelta(hours=3))
+    gmt_plus_3_time = datetime.now(gmt_plus_3_timezone)
+    timestamp = gmt_plus_3_time.strftime("%Y-%m-%d %H:%M")
+    result_string = f"{timestamp} - {user_username}: {correct} из {total}\n"
     grades_file = os.path.join(GRADES_FOLDER, f'grades{test_id}.txt')
     with open(grades_file, 'a', encoding='utf-8') as file:
         file.write(result_string)
-    await query.edit_message_text(f'Вы завершили тест {correct} из {total}.')
+    await query.edit_message_text(
+        f'Вы завершили тест, правильно {correct} из {total}.')
     context.user_data.clear()
+
 
 
 async def start_command(update: Update, context: CallbackContext):
@@ -118,6 +109,7 @@ async def start_command(update: Update, context: CallbackContext):
         await update.message.reply_text(
             'Пожалуйста, введите номер теста, например: /start 2')
         return
+
     test_id = context.args[0]
     try:
         initialize_test_session(context, test_id)
@@ -140,25 +132,3 @@ async def button_callback(update: Update, context: CallbackContext):
         await handle_cancel(query, context)
     else:
         await handle_answer(query, context)
-
-
-def main():
-    app = Application.builder().token(token).build()
-    app.bot_data['teacher_username'] = teacher_username
-    handlers = [
-        (CommandHandler('start', start_command)),
-        (CommandHandler('materials', materials_command)),
-        (CommandHandler('results', results_command)),
-        (CallbackQueryHandler(button_callback)),
-        (MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)),
-    ]
-    for handler in handlers:
-        app.add_handler(handler)
-    app.add_error_handler(error_handler)
-
-    print('Запускаю тест бота...')
-    app.run_polling(poll_interval=2)
-
-
-if __name__ == '__main__':
-    main()

@@ -1,17 +1,10 @@
 import csv
 import random
-import logging
 
 from telegram import Update
 from telegram.ext import CallbackContext, ContextTypes
 
-logging.basicConfig(
-    filename='test_bot.log',
-    level=logging.WARNING,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-
-logger = logging.getLogger(__name__)
+from logging_config import logger
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
