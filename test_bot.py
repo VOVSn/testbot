@@ -62,17 +62,17 @@ def updated_inline_keyboard(context: CallbackContext, selected_line: List[str]) 
     keyboard = [
         [InlineKeyboardButton(choice, callback_data=choice) for choice in choices[:2]],
         [InlineKeyboardButton(choice, callback_data=choice) for choice in choices[2:]],
-        [InlineKeyboardButton("Cancel", callback_data='cancel')],
+        [InlineKeyboardButton('Отмена', callback_data='cancel')],
     ]
     return question, InlineKeyboardMarkup(keyboard)
 
 
 async def handle_cancel(query, context):
-    last_question_message_id = context.user_data.get('last_question_message_id')
-    if last_question_message_id:
+    last_question_msg_id = context.user_data.get('last_question_message_id')
+    if last_question_msg_id:
         await context.bot.edit_message_text(
             chat_id=query.message.chat_id,
-            message_id=last_question_message_id,
+            message_id=last_question_msg_id,
             text="Тест отменен.",
             reply_markup=None
         )
@@ -83,7 +83,9 @@ async def handle_cancel(query, context):
 
 async def handle_answer(query, context):
     right_answer = context.user_data.get('right_answer')
-    user_data = context.user_data.setdefault('test_results', {'correct': 0, 'total': 0})
+    user_data = context.user_data.setdefault(
+        'test_results', {'correct': 0, 'total': 0}
+    )
     if query.data == right_answer:
         await query.answer('ВЕРНО!')
         user_data['correct'] += 1
@@ -114,7 +116,7 @@ async def display_results(query, context):
 async def start_command(update: Update, context: CallbackContext):
     if not context.args:
         await update.message.reply_text(
-            'Пожалуйста, введите номер теста, например: /start 45b7')
+            'Пожалуйста, введите номер теста, например: /start 2')
         return
     test_id = context.args[0]
     try:
@@ -122,7 +124,8 @@ async def start_command(update: Update, context: CallbackContext):
         question, reply_markup = get_next_question(context)
 
         if question:
-            message = await update.message.reply_text(question, reply_markup=reply_markup)
+            message = await update.message.reply_text(
+                question, reply_markup=reply_markup)
             context.user_data['last_question_message_id'] = message.message_id
         else:
             await update.message.reply_text('Нет вопросов в тесте!')
@@ -133,7 +136,7 @@ async def start_command(update: Update, context: CallbackContext):
 async def button_callback(update: Update, context: CallbackContext):
     query = update.callback_query
     user_choice = query.data
-    if user_choice == 'отмена':
+    if user_choice == 'cancel':
         await handle_cancel(query, context)
     else:
         await handle_answer(query, context)
