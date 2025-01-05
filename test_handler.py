@@ -7,27 +7,34 @@ from datetime import datetime, timedelta, timezone
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import CallbackContext
 
+from logging_config import logger
+
+
 GRADES_FOLDER = 'grades'
 TESTS_FOLDER = 'tests'
 
 
 def initialize_test_session(context: CallbackContext, test_id: str):
+    logger.info(f"Initializing test session for test ID {test_id}")
     questions = load_questions(test_id)
     context.user_data['questions'] = questions
     context.user_data['current_question_index'] = 0
     context.user_data['test_results'] = {'correct': 0, 'total': 0}
     context.user_data['test_id'] = test_id
+    logger.info(f"Test session for test ID {test_id} initialized with {len(questions)} questions.")
 
 
 def load_questions(test_id: str) -> List[List[str]]:
     test_file = os.path.join(TESTS_FOLDER, f'test{test_id}.csv')
     if not os.path.exists(test_file):
+        logger.error(f"Test file {test_id} not found at {test_file}.")
         raise FileNotFoundError(f'Файл теста {test_id} не найден.')
 
     with open(test_file, 'r', encoding='utf-8') as file:
         reader = csv.reader(file)
         questions = list(reader)
         random.shuffle(questions)
+        logger.info(f"Loaded {len(questions)} questions from test {test_id}.")
         return questions
 
 
@@ -36,7 +43,9 @@ def get_next_question(context: CallbackContext) -> Tuple[str, InlineKeyboardMark
     questions = context.user_data['questions']
     if current_question_index < len(questions):
         selected_line = questions[current_question_index]
+        logger.info(f"Fetching question {current_question_index + 1}.")
         return updated_inline_keyboard(context, selected_line)
+    logger.info("No more questions to display.")
     return None, None
 
 
@@ -54,6 +63,7 @@ def updated_inline_keyboard(context: CallbackContext, selected_line: List[str]) 
 
 
 async def handle_cancel(query, context):
+    logger.warning(f"Test canceled by user {query.from_user.username}.")
     last_question_msg_id = context.user_data.get('last_question_message_id')
     if last_question_msg_id:
         await context.bot.edit_message_text(
@@ -73,9 +83,11 @@ async def handle_answer(query, context):
         'test_results', {'correct': 0, 'total': 0}
     )
     if query.data == right_answer:
+        logger.info(f"User {query.from_user.username} answered correctly.")
         await query.answer('ВЕРНО!')
         user_data['correct'] += 1
     else:
+        logger.info(f"User {query.from_user.username} answered incorrectly.")
         await query.answer('НЕВЕРНО')
     user_data['total'] += 1
     context.user_data['current_question_index'] += 1
@@ -98,10 +110,10 @@ async def display_results(query, context):
     grades_file = os.path.join(GRADES_FOLDER, f'grades{test_id}.txt')
     with open(grades_file, 'a', encoding='utf-8') as file:
         file.write(result_string)
+    logger.info(f"Test {test_id} completed by user {user_username}: {correct} out of {total}.")
     await query.edit_message_text(
         f'Вы завершили тест, правильно {correct} из {total}.')
     context.user_data.clear()
-
 
 
 async def start_command(update: Update, context: CallbackContext):
@@ -122,6 +134,7 @@ async def start_command(update: Update, context: CallbackContext):
         else:
             await update.message.reply_text('Нет вопросов в тесте!')
     except FileNotFoundError:
+        logger.error(f"Test {test_id} not found.")
         await update.message.reply_text(f'Тест {test_id} не найден.')
 
 

@@ -5,7 +5,7 @@ from telegram.ext import (
 )
 
 from handlers import handle_message, error_handler
-from commands import materials_command, results_command
+from commands import materials_command, results_command, help_command
 from test_handler import start_command, button_callback
 from logging_config import logger
 
@@ -31,6 +31,7 @@ def main():
             CommandHandler('start', start_command),
             CommandHandler('materials', materials_command),
             CommandHandler('results', results_command),
+            CommandHandler('help', help_command),
             CallbackQueryHandler(button_callback),
             MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message),
         ]
