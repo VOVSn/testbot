@@ -36,7 +36,7 @@ def initialize_test_session(context: CallbackContext, test_id: str):
 def load_questions(test_id: str) -> List[List[str]]:
     test_file = os.path.join(TESTS_FOLDER, f'test{test_id}.csv')
     if not os.path.exists(test_file):
-        raise FileNotFoundError(f'Test file for {test_id} not found.')
+        raise FileNotFoundError(f'Файл теста {test_id} не найден.')
 
     with open(test_file, 'r', encoding='utf-8') as file:
         reader = csv.reader(file)
@@ -73,11 +73,11 @@ async def handle_cancel(query, context):
         await context.bot.edit_message_text(
             chat_id=query.message.chat_id,
             message_id=last_question_message_id,
-            text="Test is cancelled.",
+            text="Тест отменен.",
             reply_markup=None
         )
     else:
-        await query.answer("Test cancelled.")
+        await query.answer("Тест отменен.")
     context.user_data.clear()
 
 
@@ -85,10 +85,10 @@ async def handle_answer(query, context):
     right_answer = context.user_data.get('right_answer')
     user_data = context.user_data.setdefault('test_results', {'correct': 0, 'total': 0})
     if query.data == right_answer:
-        await query.answer("Right!")
+        await query.answer('ВЕРНО!')
         user_data['correct'] += 1
     else:
-        await query.answer("Wrong!")
+        await query.answer('НЕВЕРНО')
     user_data['total'] += 1
     context.user_data['current_question_index'] += 1
     question, reply_markup = get_next_question(context)
@@ -103,17 +103,18 @@ async def display_results(query, context):
     total = context.user_data['test_results']['total']
     test_id = context.user_data['test_id']
     user_username = query.from_user.username
-    result_string = f"{user_username}: {correct} out of {total}\n"
+    result_string = f"{user_username}: {correct} из {total}\n"
     grades_file = os.path.join(GRADES_FOLDER, f'grades{test_id}.txt')
     with open(grades_file, 'a', encoding='utf-8') as file:
         file.write(result_string)
-    await query.edit_message_text(f'You have completed the test {correct} out of {total}.')
+    await query.edit_message_text(f'Вы завершили тест {correct} из {total}.')
     context.user_data.clear()
 
 
 async def start_command(update: Update, context: CallbackContext):
     if not context.args:
-        await update.message.reply_text('Please provide a test ID. Example: /start 45b7')
+        await update.message.reply_text(
+            'Пожалуйста, введите номер теста, например: /start 45b7')
         return
     test_id = context.args[0]
     try:
@@ -124,15 +125,15 @@ async def start_command(update: Update, context: CallbackContext):
             message = await update.message.reply_text(question, reply_markup=reply_markup)
             context.user_data['last_question_message_id'] = message.message_id
         else:
-            await update.message.reply_text('No questions available. Test cannot be started.')
+            await update.message.reply_text('Нет вопросов в тесте!')
     except FileNotFoundError:
-        await update.message.reply_text(f'Test {test_id} not found.')
+        await update.message.reply_text(f'Тест {test_id} не найден.')
 
 
 async def button_callback(update: Update, context: CallbackContext):
     query = update.callback_query
     user_choice = query.data
-    if user_choice == 'cancel':
+    if user_choice == 'отмена':
         await handle_cancel(query, context)
     else:
         await handle_answer(query, context)
@@ -152,7 +153,7 @@ def main():
         app.add_handler(handler)
     app.add_error_handler(error_handler)
 
-    print('Starting polling...')
+    print('Запускаю тест бота...')
     app.run_polling(poll_interval=2)
 
 

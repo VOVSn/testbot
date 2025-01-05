@@ -5,21 +5,20 @@ import logging
 from telegram import Update
 from telegram.ext import CallbackContext, ContextTypes
 
-# Configure logging
 logging.basicConfig(
     filename='test_bot.log',
-    level=logging.WARNING,  # Adjust the level as needed (DEBUG, INFO, etc.)
+    level=logging.WARNING,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
 logger = logging.getLogger(__name__)
+
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.lower()
     user_id = update.message.from_user.id
     user_name = update.message.from_user.username
     logger.info(f"Received message from user {user_id} ({user_name}): {text}")
-    
     response = await handle_response(text, update, context)
     await update.message.reply_text(response)
     logger.info(f"Sent response to user {user_id}: {response}")
@@ -30,7 +29,8 @@ async def handle_response(text: str, update: Update, context: CallbackContext):
     for tag, possible_responses in responses.items():
         if any(keyword in text for keyword in tag.split(',')):
             response = random.choice(possible_responses)
-            logger.debug(f"Matched tag '{tag}' for text '{text}'. Response: '{response}'")
+            logger.debug(
+                f"Matched tag '{tag}' for text '{text}'. Resp: '{response}'")
             return response
     logger.warning(f"No match found for text '{text}'")
     return "I don't understand yet."
@@ -52,7 +52,8 @@ def load_responses(file_path='responses.csv'):
     return responses
 
 
-async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def error_handler(
+        update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     logger.error("An error occurred", exc_info=True)
     if update:
         logger.error(f"Update that caused the error: {update}")
