@@ -6,9 +6,11 @@ from typing import Tuple, List
 from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
-    Application, CallbackContext, CallbackQueryHandler, CommandHandler,
-    ContextTypes, MessageHandler, filters
+    Application, CallbackContext, CallbackQueryHandler,
+    CommandHandler, ContextTypes, MessageHandler, filters
 )
+
+from handle_message import handle_message
 
 load_dotenv()
 token = os.getenv('TOKEN')
@@ -18,8 +20,8 @@ if not token or not BOT_USERNAME or not teacher_username:
     print('Check .env')
     exit()
 
-grades_folder = 'grades'
-tests_folder = 'tests'
+GRADES_FOLDER = 'grades'
+TESTS_FOLDER = 'tests'
 MATERIALS_FOLDER = 'materials'
 
 
@@ -30,7 +32,7 @@ def initialize_test_session(context: CallbackContext, test_id: str):
 
 
 def load_questions(test_id: str) -> List[List[str]]:
-    test_file = os.path.join(tests_folder, f'test{test_id}.csv')
+    test_file = os.path.join(TESTS_FOLDER, f'test{test_id}.csv')
     if not os.path.exists(test_file):
         raise FileNotFoundError(f"Test file for {test_id} not found.")
 
@@ -99,7 +101,7 @@ async def display_results(query, context):
     test_id = context.user_data['test_id']
     user_username = query.from_user.username
     result_string = f"{user_username}: {correct} out of {total}\n"
-    grades_file = os.path.join(grades_folder, f'grades{test_id}.txt')
+    grades_file = os.path.join(GRADES_FOLDER, f'grades{test_id}.txt')
     with open(grades_file, 'a', encoding='utf-8') as file:
         file.write(result_string)
     await query.edit_message_text(f"You have completed the test {correct} out of {total}.")
@@ -116,7 +118,7 @@ async def results_command(update: Update, context: CallbackContext) -> None:
         return
 
     test_id = context.args[0]
-    grades_file = os.path.join(grades_folder, f'grades{test_id}.txt')
+    grades_file = os.path.join(GRADES_FOLDER, f'grades{test_id}.txt')
     if not os.path.exists(grades_file):
         await update.message.reply_text(f"No results found for test {test_id}.")
         return
@@ -168,30 +170,6 @@ async def button_callback(update: Update, context: CallbackContext):
         await handle_cancel(query, context)
     else:
         await handle_answer(query, context)
-
-
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text.lower()
-    response = await handle_response(text, update, context)
-    await update.message.reply_text(response)
-
-
-async def handle_response(text: str, update: Update, context: CallbackContext) -> str:
-    responses = load_responses()
-    for tag, possible_responses in responses.items():
-        if any(keyword in text for keyword in tag.split(',')):
-            return random.choice(possible_responses)
-    return "I don't understand yet."
-
-
-def load_responses(file_path='responses.csv'):
-    responses = {}
-    with open(file_path, 'r', encoding='utf-8') as file:
-        reader = csv.reader(file)
-        next(reader)
-        for row in reader:
-            responses[row[0]] = row[1:]
-    return responses
 
 
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
