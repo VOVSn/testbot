@@ -3,7 +3,6 @@ import os
 from telegram import Update
 from telegram.ext import CallbackContext
 
-# from test_bot import GRADES_FOLDER, MATERIALS_FOLDER
 GRADES_FOLDER = 'grades'
 MATERIALS_FOLDER = 'materials'
 

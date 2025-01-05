@@ -8,7 +8,7 @@ from telegram.ext import CallbackContext, ContextTypes
 # Configure logging
 logging.basicConfig(
     filename='test_bot.log',
-    level=logging.DEBUG,  # Adjust the level as needed (DEBUG, INFO, etc.)
+    level=logging.WARNING,  # Adjust the level as needed (DEBUG, INFO, etc.)
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 

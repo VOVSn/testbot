@@ -23,12 +23,11 @@ if not token or not BOT_USERNAME or not teacher_username:
 
 GRADES_FOLDER = 'grades'
 TESTS_FOLDER = 'tests'
-#MATERIALS_FOLDER = 'materials'
 
 
 def initialize_test_session(context: CallbackContext, test_id: str):
     questions = load_questions(test_id)
-    context.user_data['questions'] = questions  # Store shuffled questions in user_data
+    context.user_data['questions'] = questions
     context.user_data['current_question_index'] = 0
     context.user_data['test_results'] = {'correct': 0, 'total': 0}
     context.user_data['test_id'] = test_id
@@ -37,18 +36,18 @@ def initialize_test_session(context: CallbackContext, test_id: str):
 def load_questions(test_id: str) -> List[List[str]]:
     test_file = os.path.join(TESTS_FOLDER, f'test{test_id}.csv')
     if not os.path.exists(test_file):
-        raise FileNotFoundError(f"Test file for {test_id} not found.")
+        raise FileNotFoundError(f'Test file for {test_id} not found.')
 
     with open(test_file, 'r', encoding='utf-8') as file:
         reader = csv.reader(file)
         questions = list(reader)
-        random.shuffle(questions)  # Shuffle the questions here
+        random.shuffle(questions)
         return questions
 
 
 def get_next_question(context: CallbackContext) -> Tuple[str, InlineKeyboardMarkup]:
     current_question_index = context.user_data.get('current_question_index', 0)
-    questions = context.user_data['questions']  # Use preloaded and shuffled questions
+    questions = context.user_data['questions']
     if current_question_index < len(questions):
         selected_line = questions[current_question_index]
         return updated_inline_keyboard(context, selected_line)
@@ -108,13 +107,13 @@ async def display_results(query, context):
     grades_file = os.path.join(GRADES_FOLDER, f'grades{test_id}.txt')
     with open(grades_file, 'a', encoding='utf-8') as file:
         file.write(result_string)
-    await query.edit_message_text(f"You have completed the test {correct} out of {total}.")
+    await query.edit_message_text(f'You have completed the test {correct} out of {total}.')
     context.user_data.clear()
 
 
 async def start_command(update: Update, context: CallbackContext):
     if not context.args:
-        await update.message.reply_text("Please provide a test ID. Example: /start 45b7")
+        await update.message.reply_text('Please provide a test ID. Example: /start 45b7')
         return
     test_id = context.args[0]
     try:
@@ -125,9 +124,9 @@ async def start_command(update: Update, context: CallbackContext):
             message = await update.message.reply_text(question, reply_markup=reply_markup)
             context.user_data['last_question_message_id'] = message.message_id
         else:
-            await update.message.reply_text("No questions available. Test cannot be started.")
+            await update.message.reply_text('No questions available. Test cannot be started.')
     except FileNotFoundError:
-        await update.message.reply_text(f"Test {test_id} not found.")
+        await update.message.reply_text(f'Test {test_id} not found.')
 
 
 async def button_callback(update: Update, context: CallbackContext):
@@ -153,8 +152,8 @@ def main():
         app.add_handler(handler)
     app.add_error_handler(error_handler)
 
-    print("Starting polling...")
-    app.run_polling(poll_interval=1)
+    print('Starting polling...')
+    app.run_polling(poll_interval=2)
 
 
 if __name__ == '__main__':
