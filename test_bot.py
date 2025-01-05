@@ -18,6 +18,10 @@ if not token or not BOT_USERNAME or not teacher_username:
     print('Check .env')
     exit()
 
+grades_folder = 'grades'
+tests_folder = 'tests'
+MATERIALS_FOLDER = 'materials'
+
 
 def initialize_test_session(context: CallbackContext, test_id: str):
     context.user_data['current_question_index'] = 0
@@ -26,7 +30,7 @@ def initialize_test_session(context: CallbackContext, test_id: str):
 
 
 def load_questions(test_id: str) -> List[List[str]]:
-    test_file = os.path.join('tests', f'test{test_id}.csv')
+    test_file = os.path.join(tests_folder, f'test{test_id}.csv')
     if not os.path.exists(test_file):
         raise FileNotFoundError(f"Test file for {test_id} not found.")
 
@@ -95,7 +99,7 @@ async def display_results(query, context):
     test_id = context.user_data['test_id']
     user_username = query.from_user.username
     result_string = f"{user_username}: {correct} out of {total}\n"
-    grades_file = f'grades{test_id}.txt'
+    grades_file = os.path.join(grades_folder, f'grades{test_id}.txt')
     with open(grades_file, 'a', encoding='utf-8') as file:
         file.write(result_string)
     await query.edit_message_text(f"You have completed the test {correct} out of {total}.")
@@ -112,7 +116,7 @@ async def results_command(update: Update, context: CallbackContext) -> None:
         return
 
     test_id = context.args[0]
-    grades_file = f'grades{test_id}.txt'
+    grades_file = os.path.join(grades_folder, f'grades{test_id}.txt')
     if not os.path.exists(grades_file):
         await update.message.reply_text(f"No results found for test {test_id}.")
         return
@@ -125,18 +129,17 @@ async def materials_command(update: Update, context: CallbackContext) -> None:
     if not context.args:
         await update.message.reply_text("Correct use: /materials <test_id>")
         return
-
     test_id = context.args[0]
-    materials_folder = os.path.join('materials', test_id)
-    if not os.path.exists(materials_folder):
+    materials_folder_id = os.path.join(MATERIALS_FOLDER, test_id)
+    if not os.path.exists(materials_folder_id):
         await update.message.reply_text(f"No materials found for test {test_id}.")
         return
-    files = [file for file in os.listdir(materials_folder) if os.path.isfile(os.path.join(materials_folder, file))]
+    files = [file for file in os.listdir(materials_folder_id) if os.path.isfile(os.path.join(materials_folder_id, file))]
     if not files:
         await update.message.reply_text(f"No materials available for test {test_id}.")
         return
     for file in files: 
-        file_path = os.path.join(materials_folder, file)
+        file_path = os.path.join(materials_folder_id, file)
         await update.message.reply_document(document=open(file_path, 'rb'))
 
 
@@ -148,6 +151,7 @@ async def start_command(update: Update, context: CallbackContext):
     try:
         initialize_test_session(context, test_id)
         question, reply_markup = get_next_question(context)
+
         if question:
             message = await update.message.reply_text(question, reply_markup=reply_markup)
             context.user_data['last_question_message_id'] = message.message_id
@@ -198,9 +202,9 @@ def main():
     app = Application.builder().token(token).build()
     app.bot_data['teacher_username'] = teacher_username
     handlers = [
-        (CommandHandler("start", start_command)),
-        (CommandHandler("materials", materials_command)),
-        (CommandHandler("results", results_command)),
+        (CommandHandler('start', start_command)),
+        (CommandHandler('materials', materials_command)),
+        (CommandHandler('results', results_command)),
         (CallbackQueryHandler(button_callback)),
         (MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)),
     ]
