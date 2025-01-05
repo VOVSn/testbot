@@ -27,3 +27,7 @@ def load_responses(file_path='responses.csv'):
         for row in reader:
             responses[row[0]] = row[1:]
     return responses
+
+
+async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    print('error')

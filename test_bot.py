@@ -7,10 +7,10 @@ from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     Application, CallbackContext, CallbackQueryHandler,
-    CommandHandler, ContextTypes, MessageHandler, filters
+    CommandHandler, MessageHandler, filters
 )
 
-from handle_message import handle_message
+from handlers import handle_message, error_handler
 from commands import materials_command, results_command
 
 load_dotenv()
@@ -23,10 +23,12 @@ if not token or not BOT_USERNAME or not teacher_username:
 
 GRADES_FOLDER = 'grades'
 TESTS_FOLDER = 'tests'
-MATERIALS_FOLDER = 'materials'
+#MATERIALS_FOLDER = 'materials'
 
 
 def initialize_test_session(context: CallbackContext, test_id: str):
+    questions = load_questions(test_id)
+    context.user_data['questions'] = questions  # Store shuffled questions in user_data
     context.user_data['current_question_index'] = 0
     context.user_data['test_results'] = {'correct': 0, 'total': 0}
     context.user_data['test_id'] = test_id
@@ -39,13 +41,14 @@ def load_questions(test_id: str) -> List[List[str]]:
 
     with open(test_file, 'r', encoding='utf-8') as file:
         reader = csv.reader(file)
-        return list(reader)
+        questions = list(reader)
+        random.shuffle(questions)  # Shuffle the questions here
+        return questions
 
 
 def get_next_question(context: CallbackContext) -> Tuple[str, InlineKeyboardMarkup]:
     current_question_index = context.user_data.get('current_question_index', 0)
-    test_id = context.user_data['test_id']
-    questions = load_questions(test_id)
+    questions = context.user_data['questions']  # Use preloaded and shuffled questions
     if current_question_index < len(questions):
         selected_line = questions[current_question_index]
         return updated_inline_keyboard(context, selected_line)
@@ -109,8 +112,6 @@ async def display_results(query, context):
     context.user_data.clear()
 
 
-
-
 async def start_command(update: Update, context: CallbackContext):
     if not context.args:
         await update.message.reply_text("Please provide a test ID. Example: /start 45b7")
@@ -136,10 +137,6 @@ async def button_callback(update: Update, context: CallbackContext):
         await handle_cancel(query, context)
     else:
         await handle_answer(query, context)
-
-
-async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    print('error')
 
 
 def main():
