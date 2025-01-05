@@ -1,5 +1,4 @@
 import csv
-import logging
 import os
 import random
 from typing import Tuple, List
@@ -11,49 +10,35 @@ from telegram.ext import (
     ContextTypes, MessageHandler, filters
 )
 
-
-# Load environment variables from .env file
 load_dotenv()
-
-# Retrieve values from environment variables
 token = os.getenv('TOKEN')
 BOT_USERNAME = os.getenv('BOT_USERNAME')
 teacher_username = os.getenv('TEACHER_USERNAME')
-
 if not token or not BOT_USERNAME or not teacher_username:
-    print("Please check your .env file.")
+    print('Check .env')
     exit()
 
-# Logging setup
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-log_file = "log_file_01.log"
-file_handler = logging.FileHandler(log_file, encoding="utf-8")
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
+
+def initialize_test_session(context: CallbackContext, test_id: str):
+    context.user_data['current_question_index'] = 0
+    context.user_data['test_results'] = {'correct': 0, 'total': 0}
+    context.user_data['test_id'] = test_id
 
 
-# Load questions from CSV file
-def load_questions():
-    with open('test.csv', 'r') as file:
+def load_questions(test_id: str) -> List[List[str]]:
+    test_file = os.path.join('tests', f'test{test_id}.csv')
+    if not os.path.exists(test_file):
+        raise FileNotFoundError(f"Test file for {test_id} not found.")
+
+    with open(test_file, 'r', encoding='utf-8') as file:
         reader = csv.reader(file)
         return list(reader)
 
-# Helper functions for modularization
-
-
-def initialize_test_session(context: CallbackContext):
-    """Initialize a new test session for the user."""
-    context.user_data['current_question_index'] = 0
-    context.user_data['test_results'] = {'correct': 0, 'total': 0}
-
 
 def get_next_question(context: CallbackContext) -> Tuple[str, InlineKeyboardMarkup]:
-    """Retrieve the next question and keyboard from the CSV file."""
     current_question_index = context.user_data.get('current_question_index', 0)
-    questions = load_questions()
-
+    test_id = context.user_data['test_id']
+    questions = load_questions(test_id)
     if current_question_index < len(questions):
         selected_line = questions[current_question_index]
         return updated_inline_keyboard(context, selected_line)
@@ -61,14 +46,10 @@ def get_next_question(context: CallbackContext) -> Tuple[str, InlineKeyboardMark
 
 
 def updated_inline_keyboard(context: CallbackContext, selected_line: List[str]) -> Tuple[str, InlineKeyboardMarkup]:
-    """Create an inline keyboard for the given question."""
     question = selected_line[0]
     choices = selected_line[2:6]
     random.shuffle(choices)
-
-    # Store correct answer in user context
     context.user_data['right_answer'] = selected_line[1]
-
     keyboard = [
         [InlineKeyboardButton(choice, callback_data=choice) for choice in choices[:2]],
         [InlineKeyboardButton(choice, callback_data=choice) for choice in choices[2:]],
@@ -78,7 +59,6 @@ def updated_inline_keyboard(context: CallbackContext, selected_line: List[str]) 
 
 
 async def handle_cancel(query, context):
-    """Handle the 'cancel' action during the test."""
     last_question_message_id = context.user_data.get('last_question_message_id')
     if last_question_message_id:
         await context.bot.edit_message_text(
@@ -88,24 +68,20 @@ async def handle_cancel(query, context):
             reply_markup=None
         )
     else:
-        await query.answer("Test is cancelled.")
+        await query.answer("Test cancelled.")
     context.user_data.clear()
 
 
 async def handle_answer(query, context):
-    """Validate the user's answer and proceed to the next question."""
     right_answer = context.user_data.get('right_answer')
     user_data = context.user_data.setdefault('test_results', {'correct': 0, 'total': 0})
-
     if query.data == right_answer:
-        await query.answer("You are right!")
+        await query.answer("Right!")
         user_data['correct'] += 1
     else:
-        await query.answer("You are wrong!")
-
+        await query.answer("Wrong!")
     user_data['total'] += 1
     context.user_data['current_question_index'] += 1
-
     question, reply_markup = get_next_question(context)
     if question:
         await query.edit_message_text(question, reply_markup=reply_markup)
@@ -114,39 +90,16 @@ async def handle_answer(query, context):
 
 
 async def display_results(query, context):
-    """Send the final results to the user and save them to grades.txt."""
     correct = context.user_data['test_results']['correct']
     total = context.user_data['test_results']['total']
-
-    # Prepare result string
+    test_id = context.user_data['test_id']
     user_username = query.from_user.username
     result_string = f"{user_username}: {correct} out of {total}\n"
-
-    # Save the results to grades.txt
-    with open('grades.txt', 'a') as file:
+    grades_file = f'grades{test_id}.txt'
+    with open(grades_file, 'a', encoding='utf-8') as file:
         file.write(result_string)
-
     await query.edit_message_text(f"You have completed the test {correct} out of {total}.")
     context.user_data.clear()
-
-
-# Commands
-async def help_command(update: Update, context: CallbackContext) -> None:
-    await update.message.reply_text("To start the test, press /start")
-
-
-async def custom_command(update: Update, context: CallbackContext) -> None:
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    materials_folder = os.path.join(current_dir, "materials")
-    files = [file for file in os.listdir(materials_folder) if os.path.isfile(os.path.join(materials_folder, file))]
-
-    if not files:
-        await update.message.reply_text("No materials available.")
-        return
-
-    for file in files:
-        file_path = os.path.join(materials_folder, file)
-        await update.message.reply_document(document=open(file_path, 'rb'))
 
 
 async def results_command(update: Update, context: CallbackContext) -> None:
@@ -154,42 +107,71 @@ async def results_command(update: Update, context: CallbackContext) -> None:
     if user_username != context.bot_data.get('teacher_username'):
         await update.message.reply_text("Only for the teacher.")
         return
+    if not context.args:
+        await update.message.reply_text("Correct use: /results <test_id>")
+        return
 
-    with open('grades.txt', 'r') as file:
+    test_id = context.args[0]
+    grades_file = f'grades{test_id}.txt'
+    if not os.path.exists(grades_file):
+        await update.message.reply_text(f"No results found for test {test_id}.")
+        return
+    with open(grades_file, 'r', encoding='utf-8') as file:
         results = file.read()
     await update.message.reply_text(results)
 
 
+async def materials_command(update: Update, context: CallbackContext) -> None:
+    if not context.args:
+        await update.message.reply_text("Correct use: /materials <test_id>")
+        return
+
+    test_id = context.args[0]
+    materials_folder = os.path.join('materials', test_id)
+    if not os.path.exists(materials_folder):
+        await update.message.reply_text(f"No materials found for test {test_id}.")
+        return
+    files = [file for file in os.listdir(materials_folder) if os.path.isfile(os.path.join(materials_folder, file))]
+    if not files:
+        await update.message.reply_text(f"No materials available for test {test_id}.")
+        return
+    for file in files: 
+        file_path = os.path.join(materials_folder, file)
+        await update.message.reply_document(document=open(file_path, 'rb'))
+
+
 async def start_command(update: Update, context: CallbackContext):
-    initialize_test_session(context)
-    question, reply_markup = get_next_question(context)
+    if not context.args:
+        await update.message.reply_text("Please provide a test ID. Example: /start 45b7")
+        return
+    test_id = context.args[0]
+    try:
+        initialize_test_session(context, test_id)
+        question, reply_markup = get_next_question(context)
+        if question:
+            message = await update.message.reply_text(question, reply_markup=reply_markup)
+            context.user_data['last_question_message_id'] = message.message_id
+        else:
+            await update.message.reply_text("No questions available. Test cannot be started.")
+    except FileNotFoundError:
+        await update.message.reply_text(f"Test {test_id} not found.")
 
-    if question:
-        message = await update.message.reply_text(question, reply_markup=reply_markup)
-        context.user_data['last_question_message_id'] = message.message_id
-    else:
-        await update.message.reply_text("No questions available. Test cannot be started.")
 
-
-# Callback handlers
 async def button_callback(update: Update, context: CallbackContext):
     query = update.callback_query
     user_choice = query.data
-
     if user_choice == 'cancel':
         await handle_cancel(query, context)
     else:
         await handle_answer(query, context)
 
 
-# Handling user messages
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.lower()
     response = await handle_response(text, update, context)
     await update.message.reply_text(response)
 
 
-# Response loader
 async def handle_response(text: str, update: Update, context: CallbackContext) -> str:
     responses = load_responses()
     for tag, possible_responses in responses.items():
@@ -202,39 +184,28 @@ def load_responses(file_path='responses.csv'):
     responses = {}
     with open(file_path, 'r', encoding='utf-8') as file:
         reader = csv.reader(file)
-        next(reader)  # Skip the header
+        next(reader)
         for row in reader:
             responses[row[0]] = row[1:]
     return responses
 
 
-# Error handling
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    logger.error(f"Update {update} caused error {context.error}")
+    print('error')
 
 
-# Main function to initialize the bot and run it
 def main():
     app = Application.builder().token(token).build()
-
-    # Set teacher username in bot data
     app.bot_data['teacher_username'] = teacher_username
-
-    # List of commands and their corresponding handlers
     handlers = [
         (CommandHandler("start", start_command)),
-        (CommandHandler("help", help_command)),
-        (CommandHandler("materials", custom_command)),
+        (CommandHandler("materials", materials_command)),
         (CommandHandler("results", results_command)),
         (CallbackQueryHandler(button_callback)),
         (MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)),
     ]
-
-    # Add handlers to the application in a loop
     for handler in handlers:
         app.add_handler(handler)
-
-    # Error handler
     app.add_error_handler(error_handler)
 
     print("Starting polling...")
