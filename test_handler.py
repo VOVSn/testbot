@@ -102,6 +102,7 @@ async def display_results(query, context):
     correct = context.user_data['test_results']['correct']
     total = context.user_data['test_results']['total']
     test_id = context.user_data['test_id']
+    user_id = query.from_user.id  # Use Telegram user ID
     user_username = query.from_user.username
     user_first_name = query.from_user.first_name  # Fetch the first name
     
@@ -118,12 +119,21 @@ async def display_results(query, context):
     gmt_plus_3_time = datetime.now(gmt_plus_3_timezone)
     timestamp = gmt_plus_3_time.strftime("%Y-%m-%d %H:%M")
     
-    # Include percentage in the result string
+    # Result string for grades*.txt
     result_string = f"{timestamp} - {user_first_name}({user_username}): {correct} из {total} [{percentage_str}%]\n"
     
+    # File path for grades*.txt
     grades_file = os.path.join(GRADES_FOLDER, f'grades{test_id}.txt')
     with open(grades_file, 'a', encoding='utf-8') as file:
         file.write(result_string)
+
+    # Result string for results/<user_id>.txt
+    user_results_string = f"тест №{test_id} дата {timestamp} результат {correct} из {total} [{percentage_str}%]\n"
+    
+    # File path for results/<user_id>.txt
+    user_results_file = os.path.join('results', f'{user_id}.txt')  # Use user ID for the filename
+    with open(user_results_file, 'a', encoding='utf-8') as file:
+        file.write(user_results_string)
     
     logger.info(f"Test {test_id} completed by user {user_first_name}({user_username}): {correct} out of {total} [{percentage_str}%].")
     
