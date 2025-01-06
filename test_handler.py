@@ -103,23 +103,41 @@ async def display_results(query, context):
     total = context.user_data['test_results']['total']
     test_id = context.user_data['test_id']
     user_username = query.from_user.username
+    user_first_name = query.from_user.first_name  # Fetch the first name
+    
+    # Calculate the percentage of correct answers
+    if total > 0:
+        percentage = (correct / total) * 100
+    else:
+        percentage = 0
+
+    # Format the percentage with 2 decimal places
+    percentage_str = f"{percentage:.1f}"
+
     gmt_plus_3_timezone = timezone(timedelta(hours=3))
     gmt_plus_3_time = datetime.now(gmt_plus_3_timezone)
     timestamp = gmt_plus_3_time.strftime("%Y-%m-%d %H:%M")
-    result_string = f"{timestamp} - {user_username}: {correct} из {total}\n"
+    
+    # Include percentage in the result string
+    result_string = f"{timestamp} - {user_first_name}({user_username}): {correct} из {total} [{percentage_str}%]\n"
+    
     grades_file = os.path.join(GRADES_FOLDER, f'grades{test_id}.txt')
     with open(grades_file, 'a', encoding='utf-8') as file:
         file.write(result_string)
-    logger.info(f"Test {test_id} completed by user {user_username}: {correct} out of {total}.")
+    
+    logger.info(f"Test {test_id} completed by user {user_first_name}({user_username}): {correct} out of {total} [{percentage_str}%].")
+    
     await query.edit_message_text(
-        f'Вы завершили тест, правильно {correct} из {total}.')
+        f'Вы завершили тест, правильно {correct} из {total} [{percentage_str}%].')
+    
     context.user_data.clear()
 
 
-async def start_command(update: Update, context: CallbackContext):
+
+async def test_command(update: Update, context: CallbackContext):
     if not context.args:
         await update.message.reply_text(
-            'Пожалуйста, введите номер теста, например: /start 2')
+            'Пожалуйста, введите номер теста, например: /test 2')
         return
 
     test_id = context.args[0]
