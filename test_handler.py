@@ -2,53 +2,50 @@ import csv
 import os
 import random
 from typing import Tuple, List
+from datetime import datetime, timedelta, timezone
 
-from dotenv import load_dotenv
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import (
-    Application, CallbackContext, CallbackQueryHandler,
-    CommandHandler, ContextTypes, MessageHandler, filters
-)
+from telegram.ext import CallbackContext
 
-from handle_message import handle_message
-from commands import materials_command, results_command
+from logging_config import logger
 
-load_dotenv()
-token = os.getenv('TOKEN')
-BOT_USERNAME = os.getenv('BOT_USERNAME')
-teacher_username = os.getenv('TEACHER_USERNAME')
-if not token or not BOT_USERNAME or not teacher_username:
-    print('Check .env')
-    exit()
 
 GRADES_FOLDER = 'grades'
 TESTS_FOLDER = 'tests'
-MATERIALS_FOLDER = 'materials'
 
 
 def initialize_test_session(context: CallbackContext, test_id: str):
+    logger.info(f"Initializing test session for test ID {test_id}")
+    questions = load_questions(test_id)
+    context.user_data['questions'] = questions
     context.user_data['current_question_index'] = 0
     context.user_data['test_results'] = {'correct': 0, 'total': 0}
     context.user_data['test_id'] = test_id
+    logger.info(f"Test session for test ID {test_id} initialized with {len(questions)} questions.")
 
 
 def load_questions(test_id: str) -> List[List[str]]:
     test_file = os.path.join(TESTS_FOLDER, f'test{test_id}.csv')
     if not os.path.exists(test_file):
-        raise FileNotFoundError(f"Test file for {test_id} not found.")
+        logger.error(f"Test file {test_id} not found at {test_file}.")
+        raise FileNotFoundError(f'Файл теста {test_id} не найден.')
 
     with open(test_file, 'r', encoding='utf-8') as file:
         reader = csv.reader(file)
-        return list(reader)
+        questions = list(reader)
+        random.shuffle(questions)
+        logger.info(f"Loaded {len(questions)} questions from test {test_id}.")
+        return questions
 
 
 def get_next_question(context: CallbackContext) -> Tuple[str, InlineKeyboardMarkup]:
     current_question_index = context.user_data.get('current_question_index', 0)
-    test_id = context.user_data['test_id']
-    questions = load_questions(test_id)
+    questions = context.user_data['questions']
     if current_question_index < len(questions):
         selected_line = questions[current_question_index]
+        logger.info(f"Fetching question {current_question_index + 1}.")
         return updated_inline_keyboard(context, selected_line)
+    logger.info("No more questions to display.")
     return None, None
 
 
@@ -60,33 +57,38 @@ def updated_inline_keyboard(context: CallbackContext, selected_line: List[str]) 
     keyboard = [
         [InlineKeyboardButton(choice, callback_data=choice) for choice in choices[:2]],
         [InlineKeyboardButton(choice, callback_data=choice) for choice in choices[2:]],
-        [InlineKeyboardButton("Cancel", callback_data='cancel')],
+        [InlineKeyboardButton('Отмена', callback_data='cancel')],
     ]
     return question, InlineKeyboardMarkup(keyboard)
 
 
 async def handle_cancel(query, context):
-    last_question_message_id = context.user_data.get('last_question_message_id')
-    if last_question_message_id:
+    logger.warning(f"Test canceled by user {query.from_user.username}.")
+    last_question_msg_id = context.user_data.get('last_question_message_id')
+    if last_question_msg_id:
         await context.bot.edit_message_text(
             chat_id=query.message.chat_id,
-            message_id=last_question_message_id,
-            text="Test is cancelled.",
+            message_id=last_question_msg_id,
+            text="Тест отменен.",
             reply_markup=None
         )
     else:
-        await query.answer("Test cancelled.")
+        await query.answer("Тест отменен.")
     context.user_data.clear()
 
 
 async def handle_answer(query, context):
     right_answer = context.user_data.get('right_answer')
-    user_data = context.user_data.setdefault('test_results', {'correct': 0, 'total': 0})
+    user_data = context.user_data.setdefault(
+        'test_results', {'correct': 0, 'total': 0}
+    )
     if query.data == right_answer:
-        await query.answer("Right!")
+        logger.info(f"User {query.from_user.username} answered correctly.")
+        await query.answer('ВЕРНО!')
         user_data['correct'] += 1
     else:
-        await query.answer("Wrong!")
+        logger.info(f"User {query.from_user.username} answered incorrectly.")
+        await query.answer('НЕВЕРНО')
     user_data['total'] += 1
     context.user_data['current_question_index'] += 1
     question, reply_markup = get_next_question(context)
@@ -101,32 +103,57 @@ async def display_results(query, context):
     total = context.user_data['test_results']['total']
     test_id = context.user_data['test_id']
     user_username = query.from_user.username
-    result_string = f"{user_username}: {correct} out of {total}\n"
+    user_first_name = query.from_user.first_name  # Fetch the first name
+    
+    # Calculate the percentage of correct answers
+    if total > 0:
+        percentage = (correct / total) * 100
+    else:
+        percentage = 0
+
+    # Format the percentage with 2 decimal places
+    percentage_str = f"{percentage:.1f}"
+
+    gmt_plus_3_timezone = timezone(timedelta(hours=3))
+    gmt_plus_3_time = datetime.now(gmt_plus_3_timezone)
+    timestamp = gmt_plus_3_time.strftime("%Y-%m-%d %H:%M")
+    
+    # Include percentage in the result string
+    result_string = f"{timestamp} - {user_first_name}({user_username}): {correct} из {total} [{percentage_str}%]\n"
+    
     grades_file = os.path.join(GRADES_FOLDER, f'grades{test_id}.txt')
     with open(grades_file, 'a', encoding='utf-8') as file:
         file.write(result_string)
-    await query.edit_message_text(f"You have completed the test {correct} out of {total}.")
+    
+    logger.info(f"Test {test_id} completed by user {user_first_name}({user_username}): {correct} out of {total} [{percentage_str}%].")
+    
+    await query.edit_message_text(
+        f'Вы завершили тест, правильно {correct} из {total} [{percentage_str}%].')
+    
     context.user_data.clear()
 
 
 
-
-async def start_command(update: Update, context: CallbackContext):
+async def test_command(update: Update, context: CallbackContext):
     if not context.args:
-        await update.message.reply_text("Please provide a test ID. Example: /start 45b7")
+        await update.message.reply_text(
+            'Пожалуйста, введите номер теста, например: /test 2')
         return
+
     test_id = context.args[0]
     try:
         initialize_test_session(context, test_id)
         question, reply_markup = get_next_question(context)
 
         if question:
-            message = await update.message.reply_text(question, reply_markup=reply_markup)
+            message = await update.message.reply_text(
+                question, reply_markup=reply_markup)
             context.user_data['last_question_message_id'] = message.message_id
         else:
-            await update.message.reply_text("No questions available. Test cannot be started.")
+            await update.message.reply_text('Нет вопросов в тесте!')
     except FileNotFoundError:
-        await update.message.reply_text(f"Test {test_id} not found.")
+        logger.error(f"Test {test_id} not found.")
+        await update.message.reply_text(f'Тест {test_id} не найден.')
 
 
 async def button_callback(update: Update, context: CallbackContext):
@@ -136,29 +163,3 @@ async def button_callback(update: Update, context: CallbackContext):
         await handle_cancel(query, context)
     else:
         await handle_answer(query, context)
-
-
-async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    print('error')
-
-
-def main():
-    app = Application.builder().token(token).build()
-    app.bot_data['teacher_username'] = teacher_username
-    handlers = [
-        (CommandHandler('start', start_command)),
-        (CommandHandler('materials', materials_command)),
-        (CommandHandler('results', results_command)),
-        (CallbackQueryHandler(button_callback)),
-        (MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)),
-    ]
-    for handler in handlers:
-        app.add_handler(handler)
-    app.add_error_handler(error_handler)
-
-    print("Starting polling...")
-    app.run_polling(poll_interval=1)
-
-
-if __name__ == '__main__':
-    main()
