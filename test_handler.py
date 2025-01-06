@@ -31,7 +31,7 @@ def load_questions(test_id: str) -> List[List[str]]:
         raise FileNotFoundError(f'Файл теста {test_id} не найден.')
 
     with open(test_file, 'r', encoding='utf-8') as file:
-        reader = csv.reader(file)
+        reader = csv.reader(file, delimiter=';')  # Specify ';' as the delimiter
         questions = list(reader)
         random.shuffle(questions)
         logger.info(f"Loaded {len(questions)} questions from test {test_id}.")
