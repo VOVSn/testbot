@@ -7,6 +7,7 @@ from logging_config import logger
 
 UPLOAD_STATE = range(1)  # For tracking the state of uploads
 MATERIALS_FOLDER = 'materials'
+TESTS_FOLDER = 'tests'
 
 
 async def load_command(update: Update, context: CallbackContext) -> int:
@@ -72,9 +73,8 @@ async def handle_file_upload(update: Update, context: CallbackContext) -> int:
                 await update.message.reply_text("Файл должен быть в формате test*.csv.")
                 return UPLOAD_STATE
 
-            tests_folder = 'tests'
-            os.makedirs(tests_folder, exist_ok=True)
-            file_path = os.path.join(tests_folder, document.file_name)
+            os.makedirs(TESTS_FOLDER, exist_ok=True)
+            file_path = os.path.join(TESTS_FOLDER, document.file_name)
 
             logger.info(f"Downloading test file to {file_path}")
             await file.download_to_drive(file_path)  # Download the file to the specified path
