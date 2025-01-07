@@ -9,25 +9,15 @@ UPLOAD_STATE = range(1)  # For tracking the state of uploads
 MATERIALS_FOLDER = 'materials'
 
 
-def load_teachers():
-    teachers_file = 'teachers.txt'
-    if not os.path.exists(teachers_file):
-        return []
-    
-    with open(teachers_file, 'r') as f:
-        teachers = f.readlines()
-    
-    return [teacher.strip() for teacher in teachers]
-
 async def load_command(update: Update, context: CallbackContext) -> int:
     user_username = update.message.from_user.username
     admin_username = os.getenv('ADMIN_USERNAME')
-    teachers = load_teachers()
+    teacher_usernames = context.bot_data.get('teacher_usernames', [])  # Access teacher usernames
 
     logger.info(f"User {user_username} triggered /load command.")
 
     # Check if the user is the admin or a teacher
-    if user_username != admin_username and user_username not in teachers:
+    if user_username != admin_username and user_username not in teacher_usernames:
         logger.warning(f"Unauthorized access attempt by user {user_username}.")
         await update.message.reply_text("Только для преподавателя или администратора.")
         return ConversationHandler.END
