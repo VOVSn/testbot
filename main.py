@@ -5,6 +5,7 @@ from telegram.ext import (
     CallbackQueryHandler, MessageHandler, filters
 )
 
+from admin_commands import add_teacher_command, list_teachers_command
 from handlers import handle_message, error_handler
 from commands import materials_command, results_command, txt_command
 from start_command import start_command
@@ -13,6 +14,9 @@ from logging_config import logger
 from load_command import (
     load_command, handle_file_upload, cancel_load, UPLOAD_STATE
 )
+
+
+
 
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
@@ -54,6 +58,8 @@ def main():
             CommandHandler('results', results_command),
             CommandHandler('test', test_command),
             CommandHandler('txt', txt_command),
+            CommandHandler('add', add_teacher_command),
+            CommandHandler('list', list_teachers_command),
             CallbackQueryHandler(button_callback),
             MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message),
             load_handler
