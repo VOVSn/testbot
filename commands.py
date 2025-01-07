@@ -128,5 +128,6 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     Примеры комманд:
     /test 2 - запустить тест № 2
     /materials 2 - получить учебные материалы по тесту № 2
+    /results - получить свои результаты
     """
     await update.message.reply_text(help_text)
