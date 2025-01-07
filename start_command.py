@@ -26,7 +26,8 @@ async def start_command(
         /materials <test_id> - учебные материалы для теста № <test_id>
         /results <test_id> - результаты студентов для теста № <test_id>
         /txt <test_id> - результаты студентов в виде текстового файла
-        /add_teacher <username> - добавить нового преподавателя
+        /add <username> - добавить нового преподавателя
+        /list - список преподавателей
         """
     # If the user is not an admin but is a teacher, show the teacher-specific help text
     elif is_teacher:
