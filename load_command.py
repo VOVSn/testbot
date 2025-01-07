@@ -9,14 +9,27 @@ UPLOAD_STATE = range(1)  # For tracking the state of uploads
 MATERIALS_FOLDER = 'materials'
 
 
+def load_teachers():
+    teachers_file = 'teachers.txt'
+    if not os.path.exists(teachers_file):
+        return []
+    
+    with open(teachers_file, 'r') as f:
+        teachers = f.readlines()
+    
+    return [teacher.strip() for teacher in teachers]
+
 async def load_command(update: Update, context: CallbackContext) -> int:
     user_username = update.message.from_user.username
+    admin_username = os.getenv('ADMIN_USERNAME')
+    teachers = load_teachers()
+
     logger.info(f"User {user_username} triggered /load command.")
 
-    # Check if the user is the teacher
-    if user_username != context.bot_data.get('teacher_username'):
+    # Check if the user is the admin or a teacher
+    if user_username != admin_username and user_username not in teachers:
         logger.warning(f"Unauthorized access attempt by user {user_username}.")
-        await update.message.reply_text("Только для преподавателя.")
+        await update.message.reply_text("Только для преподавателя или администратора.")
         return ConversationHandler.END
 
     # Without arguments: Expecting a test CSV file
@@ -41,7 +54,7 @@ async def load_command(update: Update, context: CallbackContext) -> int:
     os.makedirs(materials_folder, exist_ok=True)
 
     await update.message.reply_text(
-        f"Отправьте файлы для загрузки материалов в папку:"
+        f"Отправьте файлы для загрузки материалов в папку:" 
         f" materials/{test_id}/"
     )
     return UPLOAD_STATE
