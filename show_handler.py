@@ -33,12 +33,15 @@ async def show_command(update: Update, context: CallbackContext) -> None:
                 if len(row) < 2:
                     continue  # Skip invalid rows
                 question = row[0]
-                all_answers = row[1:]  # Get all answers (including correct answer)
-                incorrect_answers = all_answers[:0] + all_answers[1:]  # Exclude the correct answer (index 1)
+                all_answers = row[1:]
+                incorrect_answers = all_answers[:0] + all_answers[1:]
 
                 # Format the question and its choices
                 test_lines.append(
-                    f"{question}\n" + "\n".join(f"[ ]{i + 1}. {choice}" for i, choice in enumerate(incorrect_answers))
+                    f"{question}\n" + "\n".join(
+                        f"[ ]{i + 1}. {choice}" for i, choice in enumerate(
+                            incorrect_answers
+                        ))
                 )
 
         # Create the .txt file to send to the user
@@ -54,13 +57,15 @@ async def show_command(update: Update, context: CallbackContext) -> None:
         await update.message.reply_text(
             f"Вот ваш тест (test_id: {test_id}):", quote=False
         )
-        await update.message.reply_document(document=open(test_file_path_txt, 'rb'))
-        os.remove(test_file_path_txt)  # Clean up the temporary file after sending it
+        await update.message.reply_document(
+            document=open(test_file_path_txt, 'rb'))
+        os.remove(test_file_path_txt)
 
         logger.info(f"Test {test_id} sent to {user_username}")
 
     except Exception as e:
         logger.exception(f"Error generating test {test_id}: {e}")
-        await update.message.reply_text("Произошла ошибка при генерации теста.")
+        await update.message.reply_text(
+            "Произошла ошибка при генерации теста.")
 
 show_command_handler = CommandHandler('show', show_command)

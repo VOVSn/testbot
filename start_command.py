@@ -1,5 +1,5 @@
 from telegram import Update
-from telegram.ext import ContextTypes
+from telegram.ext import ContextTypes, CommandHandler
 
 from logging_config import logger
 
@@ -50,3 +50,5 @@ async def start_command(
         """
     
     await update.message.reply_text(help_text)
+
+start_command_handler = CommandHandler('start', start_command)

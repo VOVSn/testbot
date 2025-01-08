@@ -9,7 +9,7 @@ from logging_config import logger
 from load_command import (
     load_command, handle_file_upload, cancel_load, UPLOAD_STATE
 )
-from start_command import start_command
+from start_command import start_command_handler
 from test_handler import test_command, button_callback
 from settings import TOKEN, ADMIN_USERNAME, load_teachers
 from materials_handler import materials_command_handler
@@ -35,7 +35,6 @@ def main():
         )
 
         handlers = [
-            CommandHandler('start', start_command),
             CommandHandler('test', test_command),
             CommandHandler('add', add_teacher_command),
             CommandHandler('list', list_teachers_command),
@@ -45,7 +44,8 @@ def main():
             materials_command_handler,
             txt_command_handler,
             results_command_handler,
-            show_command_handler
+            show_command_handler,
+            start_command_handler
         ]
         
         for handler in handlers:
