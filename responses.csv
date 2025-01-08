@@ -1,24 +1,23 @@
 tag,message_responses
-how are you,как дела,нормально,хорошо,ладно,отлично
-hello,привет,что нового,приветствую,здравствуй
-hey,привет,что нового,приветствую,здравствуй
-hi,что нового,приветствую,здравствуй,привет
-bye,увидимся,до свидания,пока,прощай
-what's your name,я бот,зови меня бот,меня зовут бот
-how can you help,я могу проводить тестирование,предоставлять информацию,помогать с командами
-thank you,пожалуйста,рад был помочь,с удовольствием помогаю
-good morning,доброе утро,хорошего дня,привет,здравствуй
-good afternoon,добрый день,послеобеденное время,привет,здравствуй
-good evening,добрый вечер,вечер,привет,здравствуй
-как дела,нормально,хорошо,неплохо,отлично
-привет,привет,что нового,приветствия,здравствуй
-эй,привет,что нового,приветствия,здравствуй
-приветствие,что нового,приветствия,здравствуй,привет
-пока,увидимся,до свидания,прощай,пока-пока
-как тебя зовут,я бот,зови меня бот,меня зовут бот
-как ты можешь помочь,я могу проводить тестирование,предоставлять информацию,помогать с командами
-спасибо,пожалуйста,рад был помочь,с удовольствием помогаю
-доброе утро,доброе утро,хорошего дня,привет,здравствуй
-добрый день,добрый день,добрый день,привет,здравствуй
-добрый вечер,добрый вечер,вечер,привет,здравствуй
-помощь,в приватном чате есть комманды
+how are you,I'm good, thank you!,Doing well, how about you?,Feeling great, hope you are too!,I'm here to help, what about you?
+hello,Hello there!,Hi, nice to see you!,Greetings!,Hello! How can I assist you today?
+hey,Hey there!,Hi!,Hello!,What's up?
+hi,Hi!,Hello!,Greetings!,How's it going?
+bye,Goodbye!,See you later!,Take care!,Bye-bye!
+what's your name,I'm Bot, your assistant.,Call me Bot!,I'm just your friendly bot here to help.,You can call me Bot.
+how can you help,I can assist with testing, information, and commands.,I'm here to help you with various tasks.,You can ask me about commands or request info!,I can guide you through testing or answer questions.
+thank you,You're welcome!,Happy to help!,Glad I could assist!,No problem!
+good morning,Good morning!,Have a wonderful day!,Hi there, good morning!,Morning!
+good afternoon,Good afternoon!,Hope your day is going well!,Hi, good afternoon!,Hello there!
+good evening,Good evening!,Hope you're having a lovely evening!,Hi, good evening!,Hello!
+как дела,Все хорошо, а у тебя?,Отлично, спасибо!,Хорошо, спасибо!,Не жалуюсь!
+привет,Привет!,Как дела?,Приветствую!,Здравствуй!
+эй,Эй, как дела?,Привет!,Здравствуй!,Что нового?
+пока,До встречи!,Пока!,Береги себя!,До свидания!
+как тебя зовут,Меня зовут Бот.,Я Бот, рад помочь!,Просто Бот.,Можете звать меня Бот.
+как ты можешь помочь,Могу предоставить информацию.,Провожу тесты и отвечаю на вопросы.,Готов помочь с командами.,Помогаю решать задачи.
+спасибо,Всегда рад помочь!,Не за что!,Рад, что мог помочь.,С удовольствием!
+доброе утро,Доброе утро!,Прекрасного дня!,Приветствую утром!,Хорошего начала дня!
+добрый день,Добрый день!,Как проходит день?,Приветствую!,Приятного дня!
+добрый вечер,Добрый вечер!,Как вечер?,Привет!,Как настроение?
+помощь, отправьте команду /start
