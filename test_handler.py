@@ -5,13 +5,10 @@ from typing import Tuple, List
 from datetime import datetime, timedelta, timezone
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import CallbackContext
+from telegram.ext import CallbackContext, CommandHandler, CallbackQueryHandler
 
 from logging_config import logger
-
-
-GRADES_FOLDER = 'grades'
-TESTS_FOLDER = 'tests'
+from settings import GRADES_FOLDER, TESTS_FOLDER
 
 
 def initialize_test_session(context: CallbackContext, test_id: str):
@@ -29,9 +26,8 @@ def load_questions(test_id: str) -> List[List[str]]:
     if not os.path.exists(test_file):
         logger.error(f"Test file {test_id} not found at {test_file}.")
         raise FileNotFoundError(f'Файл теста {test_id} не найден.')
-
     with open(test_file, 'r', encoding='utf-8') as file:
-        reader = csv.reader(file, delimiter=';')  # Specify ';' as the delimiter
+        reader = csv.reader(file, delimiter=';')
         questions = list(reader)
         random.shuffle(questions)
         logger.info(f"Loaded {len(questions)} questions from test {test_id}.")
@@ -102,46 +98,29 @@ async def display_results(query, context):
     correct = context.user_data['test_results']['correct']
     total = context.user_data['test_results']['total']
     test_id = context.user_data['test_id']
-    user_id = query.from_user.id  # Use Telegram user ID
+    user_id = query.from_user.id
     user_username = query.from_user.username
-    user_first_name = query.from_user.first_name  # Fetch the first name
-    
-    # Calculate the percentage of correct answers
+    user_first_name = query.from_user.first_name
     if total > 0:
         percentage = (correct / total) * 100
     else:
         percentage = 0
-
-    # Format the percentage with 2 decimal places
     percentage_str = f"{percentage:.1f}"
-
     gmt_plus_3_timezone = timezone(timedelta(hours=3))
     gmt_plus_3_time = datetime.now(gmt_plus_3_timezone)
     timestamp = gmt_plus_3_time.strftime("%Y-%m-%d %H:%M")
-    
-    # Result string for grades*.txt
     result_string = f"{timestamp} - {user_first_name}({user_username}): {correct} из {total} [{percentage_str}%]\n"
-    
-    # File path for grades*.txt
     grades_file = os.path.join(GRADES_FOLDER, f'grades{test_id}.txt')
     with open(grades_file, 'a', encoding='utf-8') as file:
         file.write(result_string)
-
-    # Result string for results/<user_id>.txt
     user_results_string = f"тест №{test_id} дата {timestamp} результат {correct} из {total} [{percentage_str}%]\n"
-    
-    # File path for results/<user_id>.txt
-    user_results_file = os.path.join('results', f'{user_id}.txt')  # Use user ID for the filename
+    user_results_file = os.path.join('results', f'{user_id}.txt')
     with open(user_results_file, 'a', encoding='utf-8') as file:
         file.write(user_results_string)
-    
     logger.info(f"Test {test_id} completed by user {user_first_name}({user_username}): {correct} out of {total} [{percentage_str}%].")
-    
     await query.edit_message_text(
         f'Вы завершили тест, правильно {correct} из {total} [{percentage_str}%].')
-    
     context.user_data.clear()
-
 
 
 async def test_command(update: Update, context: CallbackContext):
@@ -149,12 +128,10 @@ async def test_command(update: Update, context: CallbackContext):
         await update.message.reply_text(
             'Пожалуйста, введите номер теста, например: /test 2')
         return
-
     test_id = context.args[0]
     try:
         initialize_test_session(context, test_id)
         question, reply_markup = get_next_question(context)
-
         if question:
             message = await update.message.reply_text(
                 question, reply_markup=reply_markup)
@@ -173,3 +150,7 @@ async def button_callback(update: Update, context: CallbackContext):
         await handle_cancel(query, context)
     else:
         await handle_answer(query, context)
+
+
+test_command_handler = CommandHandler('test', test_command)
+button_callback_handler = CallbackQueryHandler(button_callback)

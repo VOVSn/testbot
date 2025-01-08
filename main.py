@@ -12,7 +12,7 @@ from load_handler import load_command_handler
 from add_handler import add_command_handler
 from list_handler import list_command_handler
 from error_handler import error_handler
-from test_handler import test_command, button_callback
+from test_handler import test_command_handler, button_callback_handler
 
 
 def main():
@@ -23,8 +23,6 @@ def main():
         app.bot_data['teacher_usernames'] = load_teachers()
 
         handlers = [
-            CommandHandler('test', test_command),
-            CallbackQueryHandler(button_callback),
             materials_command_handler,
             txt_command_handler,
             results_command_handler,
@@ -33,7 +31,9 @@ def main():
             load_command_handler,
             add_command_handler,
             list_command_handler,
-            message_handler
+            message_handler,
+            test_command_handler,
+            button_callback_handler
         ]
         
         for handler in handlers:
