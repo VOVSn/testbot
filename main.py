@@ -23,7 +23,7 @@ def main():
         app.bot_data['admin_username'] = ADMIN_USERNAME
         app.bot_data['teacher_usernames'] = load_teachers()
 
-        handlers = [
+        for handler in [
             add_command_handler,
             button_callback_handler,
             list_command_handler,
@@ -35,9 +35,7 @@ def main():
             results_command_handler,
             test_command_handler,
             txt_command_handler,
-        ]
-
-        for handler in handlers:
+        ]:
             app.add_handler(handler)
             logger.info(f'Handler {handler} added.')
 
