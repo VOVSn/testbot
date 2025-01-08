@@ -11,11 +11,11 @@ from load_command import (
 )
 from start_command import start_command
 from test_handler import test_command, button_callback
-from show_command import show_command
 from settings import TOKEN, ADMIN_USERNAME, load_teachers
 from materials_handler import materials_command_handler
 from txt_handler import txt_command_handler
 from results_handler import results_command_handler
+from show_handler import show_command_handler
 
 
 def main():
@@ -39,13 +39,13 @@ def main():
             CommandHandler('test', test_command),
             CommandHandler('add', add_teacher_command),
             CommandHandler('list', list_teachers_command),
-            CommandHandler('show', show_command),
             CallbackQueryHandler(button_callback),
             MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message),
             load_handler,
             materials_command_handler,
             txt_command_handler,
-            results_command_handler
+            results_command_handler,
+            show_command_handler
         ]
         
         for handler in handlers:

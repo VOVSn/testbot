@@ -1,10 +1,11 @@
 import os
 import csv
-from telegram import Update
-from telegram.ext import CallbackContext
-from logging_config import logger
 
-TESTS_FOLDER = 'tests'  # Folder containing test CSV files
+from telegram import Update
+from telegram.ext import CallbackContext, CommandHandler
+
+from logging_config import logger
+from settings import TESTS_FOLDER
 
 
 async def show_command(update: Update, context: CallbackContext) -> None:
@@ -61,3 +62,5 @@ async def show_command(update: Update, context: CallbackContext) -> None:
     except Exception as e:
         logger.exception(f"Error generating test {test_id}: {e}")
         await update.message.reply_text("Произошла ошибка при генерации теста.")
+
+show_command_handler = CommandHandler('show', show_command)

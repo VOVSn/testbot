@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 MATERIALS_FOLDER = 'materials'
 GRADES_FOLDER = 'grades'
+TESTS_FOLDER = 'tests'  # Folder containing test CSV files
 
 
 # Load environment variables from the .env file
