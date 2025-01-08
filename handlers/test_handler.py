@@ -38,12 +38,12 @@ def get_next_question(context: CallbackContext) -> Tuple[str, InlineKeyboardMark
     current_question_index = context.user_data.get('current_question_index', 0)
     questions = context.user_data['questions']
     total_questions = len(questions)
-    
+
     if current_question_index < total_questions:
         selected_line = questions[current_question_index]
         question_number = current_question_index + 1
         return updated_inline_keyboard(context, selected_line, question_number, total_questions)
-    
+
     logger.info("No more questions to display.")
     return None, None
 
@@ -53,14 +53,18 @@ def updated_inline_keyboard(context: CallbackContext, selected_line: List[str], 
     choices = selected_line[2:6]
     random.shuffle(choices)
     context.user_data['right_answer'] = selected_line[1]
-    
+
+    # Retrieve the test ID
+    test_id = context.user_data.get('test_id', 'N/A')
+
     # Format the question display
     formatted_question = (
-        f"*Вопрос* {question_number} *из* {total_questions}:\n"
+        f"*Тест № {test_id}\n\n*"
+        f"*Вопрос {question_number} из {total_questions}:\n*"
         "\n"
-        f"{question}\n"
+        f"{question}                                                                                                🤖\n\n"
     )
-    
+
     keyboard = [
         [InlineKeyboardButton(choice, callback_data=choice) for choice in choices[:2]],
         [InlineKeyboardButton(choice, callback_data=choice) for choice in choices[2:]],
