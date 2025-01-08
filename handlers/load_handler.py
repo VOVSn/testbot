@@ -2,24 +2,25 @@ import os
 import re
 
 from telegram import Update
-from telegram.ext import CallbackContext, ConversationHandler
+from telegram.ext import CallbackContext, ConversationHandler, CommandHandler, MessageHandler, filters
+
 from logging_config import logger
+from settings import MATERIALS_FOLDER, TESTS_FOLDER, ADMIN_USERNAME
 
 UPLOAD_STATE = range(1)  # For tracking the state of uploads
-MATERIALS_FOLDER = 'materials'
 
 
 async def load_command(update: Update, context: CallbackContext) -> int:
     user_username = update.message.from_user.username
-    admin_username = os.getenv('ADMIN_USERNAME')
-    teacher_usernames = context.bot_data.get('teacher_usernames', [])  # Access teacher usernames
-
+    teacher_usernames = context.bot_data.get('teacher_usernames', [])
     logger.info(f"User {user_username} triggered /load command.")
 
     # Check if the user is the admin or a teacher
-    if user_username != admin_username and user_username not in teacher_usernames:
-        logger.warning(f"Unauthorized access attempt by user {user_username}.")
-        await update.message.reply_text("Только для преподавателя или администратора.")
+    if user_username != ADMIN_USERNAME and user_username not in teacher_usernames:
+        logger.warning(
+            f"Unauthorized access attempt by user {user_username}.")
+        await update.message.reply_text(
+            "Только для преподавателя или администратора.")
         return ConversationHandler.END
 
     # Without arguments: Expecting a test CSV file
@@ -44,8 +45,7 @@ async def load_command(update: Update, context: CallbackContext) -> int:
     os.makedirs(materials_folder, exist_ok=True)
 
     await update.message.reply_text(
-        f"Отправьте файлы для загрузки материалов в папку:" 
-        f" materials/{test_id}/"
+        f"Отправьте файлы для загрузки материалов в: materials/{test_id}/"
     )
     return UPLOAD_STATE
 
@@ -69,17 +69,19 @@ async def handle_file_upload(update: Update, context: CallbackContext) -> int:
         # Handle test CSV upload
         if load_mode == 'test_csv':
             if not document.file_name.startswith("test") or not document.file_name.endswith(".csv"):
-                await update.message.reply_text("Файл должен быть в формате test*.csv.")
+                await update.message.reply_text(
+                    "Файл должен быть в формате test*.csv.")
                 return UPLOAD_STATE
 
-            tests_folder = 'tests'
-            os.makedirs(tests_folder, exist_ok=True)
-            file_path = os.path.join(tests_folder, document.file_name)
+            os.makedirs(TESTS_FOLDER, exist_ok=True)
+            file_path = os.path.join(TESTS_FOLDER, document.file_name)
 
             logger.info(f"Downloading test file to {file_path}")
             await file.download_to_drive(file_path)  # Download the file to the specified path
-            logger.info(f"Test file {document.file_name} uploaded by {user_username}.")
-            await update.message.reply_text(f"Файл {document.file_name} успешно загружен в папку tests.")
+            logger.info(
+                f"Test file {document.file_name} uploaded by {user_username}.")
+            await update.message.reply_text(
+                f"Файл {document.file_name} успешно загружен в папку tests.")
             return ConversationHandler.END
 
         # Handle materials upload
@@ -97,8 +99,10 @@ async def handle_file_upload(update: Update, context: CallbackContext) -> int:
 
             logger.info(f"Downloading material file to {file_path}")
             await file.download_to_drive(file_path)  # Download the file to the specified path
-            logger.info(f"Material file {document.file_name} uploaded for test {test_id} by {user_username}.")
-            await update.message.reply_text(f"Файл {document.file_name} успешно загружен в папку materials/{test_id}.")
+            logger.info(
+                f"Material file {document.file_name} uploaded for test {test_id} by {user_username}.")
+            await update.message.reply_text(
+                f"Файл {document.file_name} успешно загружен в папку materials/{test_id}.")
             return UPLOAD_STATE
     except Exception as e:
         logger.exception(f"Error handling file upload: {e}")
@@ -112,3 +116,13 @@ async def cancel_load(update: Update, context: CallbackContext) -> int:
     logger.info(f"User {user_username} canceled the /load operation.")
     await update.message.reply_text("Загрузка завершена.")
     return ConversationHandler.END
+
+
+# Define the conversation handler for /load
+load_command_handler = ConversationHandler(
+    entry_points=[CommandHandler('load', load_command)],
+    states={
+        UPLOAD_STATE: [MessageHandler(filters.Document.ALL, handle_file_upload)]
+    },
+    fallbacks=[CommandHandler('cancel', cancel_load)]
+)

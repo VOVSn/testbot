@@ -1,7 +1,6 @@
 venv
 .env
 grades*.txt
-log*
 *.log
 *.csv
 materials/

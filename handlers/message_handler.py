@@ -2,7 +2,7 @@ import csv
 import random
 
 from telegram import Update
-from telegram.ext import CallbackContext, ContextTypes
+from telegram.ext import CallbackContext, ContextTypes, MessageHandler, filters
 
 from logging_config import logger
 
@@ -26,7 +26,7 @@ async def handle_response(text: str, update: Update, context: CallbackContext):
                 f"Matched tag '{tag}' for text '{text}'. Resp: '{response}'")
             return response
     logger.warning(f"No match found for text '{text}'")
-    return "I don't understand yet."
+    return "Я пока не понимаю("
 
 
 def load_responses(file_path='responses.csv'):
@@ -34,7 +34,7 @@ def load_responses(file_path='responses.csv'):
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
             reader = csv.reader(file)
-            next(reader)  # Skip the header row
+            next(reader)
             for row in reader:
                 responses[row[0]] = row[1:]
         logger.info(f"Successfully loaded responses from {file_path}")
@@ -45,8 +45,5 @@ def load_responses(file_path='responses.csv'):
     return responses
 
 
-async def error_handler(
-        update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    logger.error("An error occurred", exc_info=True)
-    if update:
-        logger.error(f"Update that caused the error: {update}")
+message_handler = MessageHandler(
+    filters.TEXT & ~filters.COMMAND, handle_message)
