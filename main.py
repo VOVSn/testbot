@@ -4,7 +4,6 @@ from telegram.ext import (
 )
 
 from admin_commands import add_teacher_command, list_teachers_command
-from commands import results_command, txt_command
 from handlers import handle_message, error_handler
 from logging_config import logger
 from load_command import (
@@ -15,6 +14,8 @@ from test_handler import test_command, button_callback
 from show_command import show_command
 from settings import TOKEN, ADMIN_USERNAME, load_teachers
 from materials_handler import materials_command_handler
+from txt_handler import txt_command_handler
+from results_handler import results_command_handler
 
 
 def main():
@@ -22,7 +23,7 @@ def main():
     try:
         app = Application.builder().token(TOKEN).build()
         app.bot_data['admin_username'] = ADMIN_USERNAME
-        app.bot_data['teacher_usernames'] = load_teachers()  # Store teacher usernames
+        app.bot_data['teacher_usernames'] = load_teachers()
 
         load_handler = ConversationHandler(
             entry_points=[CommandHandler('load', load_command)],
@@ -35,16 +36,16 @@ def main():
 
         handlers = [
             CommandHandler('start', start_command),
-            CommandHandler('results', results_command),
             CommandHandler('test', test_command),
-            CommandHandler('txt', txt_command),
             CommandHandler('add', add_teacher_command),
             CommandHandler('list', list_teachers_command),
             CommandHandler('show', show_command),
             CallbackQueryHandler(button_callback),
             MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message),
             load_handler,
-            materials_command_handler
+            materials_command_handler,
+            txt_command_handler,
+            results_command_handler
         ]
         
         for handler in handlers:
