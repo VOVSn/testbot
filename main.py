@@ -1,12 +1,10 @@
-import os
-from dotenv import load_dotenv
 from telegram.ext import (
     Application, CommandHandler, ConversationHandler,
     CallbackQueryHandler, MessageHandler, filters
 )
 
 from admin_commands import add_teacher_command, list_teachers_command
-from commands import materials_command, results_command, txt_command
+from commands import results_command, txt_command
 from handlers import handle_message, error_handler
 from logging_config import logger
 from load_command import (
@@ -15,26 +13,9 @@ from load_command import (
 from start_command import start_command
 from test_handler import test_command, button_callback
 from show_command import show_command
+from settings import TOKEN, ADMIN_USERNAME, load_teachers
+from materials_handler import materials_command_handler
 
-
-
-load_dotenv()
-TOKEN = os.getenv('TOKEN')
-BOT_USERNAME = os.getenv('BOT_USERNAME')
-ADMIN_USERNAME = os.getenv('ADMIN_USERNAME')  # Admin username
-TEACHER_USERNAMES_FILE = 'teachers.txt'  # File with teachers' usernames
-
-if not TOKEN or not BOT_USERNAME or not ADMIN_USERNAME:
-    logger.error('Missing: TOKEN, BOT_USERNAME, or ADMIN_USERNAME')
-    exit()
-
-# Load teacher usernames from the teachers.txt file
-def load_teachers():
-    if not os.path.exists(TEACHER_USERNAMES_FILE):
-        return []
-    
-    with open(TEACHER_USERNAMES_FILE, 'r') as file:
-        return [line.strip() for line in file.readlines()]
 
 def main():
     logger.warning('Starting the bot...')
@@ -54,7 +35,6 @@ def main():
 
         handlers = [
             CommandHandler('start', start_command),
-            CommandHandler('materials', materials_command),
             CommandHandler('results', results_command),
             CommandHandler('test', test_command),
             CommandHandler('txt', txt_command),
@@ -63,7 +43,8 @@ def main():
             CommandHandler('show', show_command),
             CallbackQueryHandler(button_callback),
             MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message),
-            load_handler
+            load_handler,
+            materials_command_handler
         ]
         
         for handler in handlers:
