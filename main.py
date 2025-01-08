@@ -1,20 +1,18 @@
-from telegram.ext import (
-    Application, CommandHandler, ConversationHandler,
-    CallbackQueryHandler, MessageHandler, filters
-)
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler
 
 from settings import TOKEN, ADMIN_USERNAME, load_teachers
 from logging_config import logger
-
-from admin_commands import add_teacher_command, list_teachers_command
-from handlers import handle_message, error_handler
+from message_handler import message_handler
 from start_handler import start_command_handler
-from test_handler import test_command, button_callback
 from materials_handler import materials_command_handler
 from txt_handler import txt_command_handler
 from results_handler import results_command_handler
 from show_handler import show_command_handler
 from load_handler import load_command_handler
+from add_handler import add_command_handler
+from list_handler import list_command_handler
+from error_handler import error_handler
+from test_handler import test_command, button_callback
 
 
 def main():
@@ -26,17 +24,16 @@ def main():
 
         handlers = [
             CommandHandler('test', test_command),
-            CommandHandler('add', add_teacher_command),
-            CommandHandler('list', list_teachers_command),
             CallbackQueryHandler(button_callback),
-            MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message),
-            # load_handler,
             materials_command_handler,
             txt_command_handler,
             results_command_handler,
             show_command_handler,
             start_command_handler,
-            load_command_handler
+            load_command_handler,
+            add_command_handler,
+            list_command_handler,
+            message_handler
         ]
         
         for handler in handlers:
