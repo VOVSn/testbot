@@ -3,7 +3,10 @@ import re
 import random
 
 from telegram import Update
-from telegram.ext import CallbackContext, ConversationHandler, CommandHandler, MessageHandler, filters
+from telegram.ext import (
+    CallbackContext, ConversationHandler, CommandHandler, MessageHandler,
+    filters
+)
 
 from logging_config import logger
 from settings import MATERIALS_FOLDER, TESTS_FOLDER, ADMIN_USERNAME
@@ -128,9 +131,9 @@ async def cancel_load(update: Update, context: CallbackContext) -> int:
 
 
 async def end_upload_state(update: Update, context: CallbackContext) -> int:
-    """Automatically end the upload state on any command or message."""
+    """Automatically end the upload state on any message or command."""
     logger.info(f"Upload state ended because a message or command was received.")
-    await update.message.reply_text("Загрузка прервана.")
+    await update.message.reply_text("Загрузка завершена.")
     return ConversationHandler.END
 
 
@@ -141,15 +144,19 @@ load_command_handler = ConversationHandler(
         UPLOAD_STATE: [
             MessageHandler(
                 filters.ATTACHMENT,
-                handle_file_upload
+                handle_file_upload  # Handles file uploads
             ),
             MessageHandler(
                 filters.TEXT & ~filters.COMMAND,
-                end_upload_state  # Any message (non-command) will end the state
+                end_upload_state  # Any non-command text ends the state
             ),
             CommandHandler(
                 'cancel',
-                cancel_load  # /cancel will still stop the state manually
+                cancel_load  # /cancel explicitly cancels the state
+            ),
+            MessageHandler(
+                filters.COMMAND,  # Any command ends the state
+                end_upload_state
             ),
         ],
     },
