@@ -22,10 +22,8 @@ async def load_command(update: Update, context: CallbackContext) -> int:
 
     # Check if the user is the admin or a teacher
     if user_username != ADMIN_USERNAME and user_username not in teacher_usernames:
-        logger.warning(
-            f"Unauthorized access attempt by user {user_username}.")
-        await update.message.reply_text(
-            "Только для преподавателя или администратора.")
+        logger.warning(f"Unauthorized access attempt by user {user_username}.")
+        await update.message.reply_text("Только для преподавателя или администратора.")
         return ConversationHandler.END
 
     # Without arguments: Expecting a test CSV file
@@ -40,8 +38,7 @@ async def load_command(update: Update, context: CallbackContext) -> int:
     # With arguments: Prepare for materials upload
     test_id = context.args[0]
     if not re.match(r'^\w+$', test_id):  # Validate test_id format
-        await update.message.reply_text(
-            "Некорректный test_id. Используйте только буквы и цифры.")
+        await update.message.reply_text("Некорректный test_id. Используйте только буквы и цифры.")
         return ConversationHandler.END
 
     context.user_data['load_mode'] = 'materials'
@@ -53,7 +50,6 @@ async def load_command(update: Update, context: CallbackContext) -> int:
         f"Отправьте файлы для загрузки материалов в: materials/{test_id}/"
     )
     return UPLOAD_STATE
-
 
 
 async def handle_file_upload(update: Update, context: CallbackContext) -> int:
@@ -123,12 +119,18 @@ async def handle_file_upload(update: Update, context: CallbackContext) -> int:
         return UPLOAD_STATE
 
 
-
 async def cancel_load(update: Update, context: CallbackContext) -> int:
     """Cancel the file upload process."""
     user_username = update.message.from_user.username
     logger.info(f"User {user_username} canceled the /load operation.")
     await update.message.reply_text("Загрузка завершена.")
+    return ConversationHandler.END
+
+
+async def end_upload_state(update: Update, context: CallbackContext) -> int:
+    """Automatically end the upload state on any command or message."""
+    logger.info(f"Upload state ended because a message or command was received.")
+    await update.message.reply_text("Загрузка прервана.")
     return ConversationHandler.END
 
 
@@ -140,7 +142,15 @@ load_command_handler = ConversationHandler(
             MessageHandler(
                 filters.ATTACHMENT,
                 handle_file_upload
-            )
+            ),
+            MessageHandler(
+                filters.TEXT & ~filters.COMMAND,
+                end_upload_state  # Any message (non-command) will end the state
+            ),
+            CommandHandler(
+                'cancel',
+                cancel_load  # /cancel will still stop the state manually
+            ),
         ],
     },
     fallbacks=[CommandHandler('cancel', cancel_load)]
