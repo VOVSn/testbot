@@ -16,6 +16,21 @@ from handlers.test_handler import test_command_handler, button_callback_handler
 from handlers.txt_handler import txt_command_handler
 
 
+HANDLERS = [
+    add_command_handler,
+    button_callback_handler,
+    list_command_handler,
+    load_command_handler,
+    materials_command_handler,
+    message_handler,
+    show_command_handler,
+    start_command_handler,
+    results_command_handler,
+    test_command_handler,
+    txt_command_handler,
+]
+
+
 def main():
     logger.warning('Starting the bot...')
     try:
@@ -23,19 +38,7 @@ def main():
         app.bot_data['admin_username'] = ADMIN_USERNAME
         app.bot_data['teacher_usernames'] = load_teachers()
 
-        for handler in [
-            add_command_handler,
-            button_callback_handler,
-            list_command_handler,
-            load_command_handler,
-            materials_command_handler,
-            message_handler,
-            show_command_handler,
-            start_command_handler,
-            results_command_handler,
-            test_command_handler,
-            txt_command_handler,
-        ]:
+        for handler in HANDLERS:
             app.add_handler(handler)
             logger.info(f'Handler {handler} added.')
 
