@@ -1,0 +1,14 @@
+services:
+  telegram-bot:
+    image: vovsn/telegram-bot
+    container_name: telegram-bot
+    env_file:
+      - .env
+    volumes:
+      - telegram-bot-data:/app
+    ports:
+      - "8081:8081"
+    restart: always
+
+volumes:
+  telegram-bot-data:
