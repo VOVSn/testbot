@@ -45,7 +45,7 @@ what is a car?;machine;building;plane;animal;machine
 3. **Запустите бота**: Выполните скрипт `main.py` для запуска бота.
 
 ## Контейнеры:
-  для запуска бота в контейнере необходимо выполнить:
+  для запуска бота в контейнере, необходимо выполнить:
 ```
 docker compose -f docker-compose.production.yml up -d
 ```
