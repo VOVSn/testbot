@@ -1,23 +1,37 @@
-tag,message_responses
-how are you,I'm good, thank you!,Doing well, how about you?,Feeling great, hope you are too!,I'm here to help, what about you?
-hello,Hello there!,Hi, nice to see you!,Greetings!,Hello! How can I assist you today?
-hey,Hey there!,Hi!,Hello!,What's up?
-hi,Hi!,Hello!,Greetings!,How's it going?
-bye,Goodbye!,See you later!,Take care!,Bye-bye!
-what's your name,I'm Bot, your assistant.,Call me Bot!,I'm just your friendly bot here to help.,You can call me Bot.
-how can you help,I can assist with testing, information, and commands.,I'm here to help you with various tasks.,You can ask me about commands or request info!,I can guide you through testing or answer questions.
-thank you,You're welcome!,Happy to help!,Glad I could assist!,No problem!
-good morning,Good morning!,Have a wonderful day!,Hi there, good morning!,Morning!
-good afternoon,Good afternoon!,Hope your day is going well!,Hi, good afternoon!,Hello there!
-good evening,Good evening!,Hope you're having a lovely evening!,Hi, good evening!,Hello!
-как дела,Все хорошо, а у тебя?,Отлично, спасибо!,Хорошо, спасибо!,Не жалуюсь!
-привет,Привет!,Как дела?,Приветствую!,Здравствуй!
-эй,Эй, как дела?,Привет!,Здравствуй!,Что нового?
-пока,До встречи!,Пока!,Береги себя!,До свидания!
-как тебя зовут,Меня зовут Бот.,Я Бот, рад помочь!,Просто Бот.,Можете звать меня Бот.
-как ты можешь помочь,Могу предоставить информацию.,Провожу тесты и отвечаю на вопросы.,Готов помочь с командами.,Помогаю решать задачи.
-спасибо,Всегда рад помочь!,Не за что!,Рад, что мог помочь.,С удовольствием!
-доброе утро,Доброе утро!,Прекрасного дня!,Приветствую утром!,Хорошего начала дня!
-добрый день,Добрый день!,Как проходит день?,Приветствую!,Приятного дня!
-добрый вечер,Добрый вечер!,Как вечер?,Привет!,Как настроение?
-помощь, отправьте команду /start
+Keywords;Response1;Response2;Response3;Response4
+how are you;I'm functioning within normal parameters, thank you!;Doing well, ready to assist!;Feeling great, hope you are too!;I'm here to help, what about you?
+hello;Hello there!;Hi, nice to see you!;Greetings!;Hello! How can I assist you today?
+hey;Hey there!;Hi!;Hello!;What's up?
+hi;Hi!;Hello!;Greetings!;How's it going?
+bye;Goodbye!;See you later!;Take care!;Bye-bye!
+what's your name;I'm TestBot, your assistant for tests.;Call me TestBot!;I'm just your friendly bot here to help with tests.;You can call me TestBot.
+how can you help;I can assist with running tests, showing materials, and providing results.;I'm here to help you manage and take tests via commands.;You can ask me about commands via /start or request info!;I can guide you through testing or show study materials.
+thank you;You're welcome!;Happy to help!;Glad I could assist!;No problem!
+good morning;Good morning!;Have a wonderful day!;Hi there, good morning!;Morning! Hope you slept well!
+good afternoon;Good afternoon!;Hope your day is going well!;Hi, good afternoon!;Hello there!
+good evening;Good evening!;Hope you're having a lovely evening!;Hi, good evening!;Hello!
+help,commands;Use the /start command to see the list of available actions.;To see the list of commands, use /start.;The /start command will show you everything I can do.
+what can you do;I manage tests, materials, and results. Use /start to see commands.;I can run tests, show study materials, and display your scores. Check /start for details.;My main function is related to testing. See /start for available actions.
+i dont understand;Could you please rephrase that?;I'm not sure I follow. Maybe try different words?;I didn't quite get that. Can you clarify?;Perhaps the /start command can help?
+ok;Okay!;Got it!;Understood!;Alright!
+okay;Okay!;Got it!;Understood!;Alright!
+good;Great!;Good to hear!;Excellent!;Nice!
+bad;Oh dear, sorry to hear that.;I understand.;Is there anything I can help with?
+what time is it;I don't have access to the current time, sorry!;My internal clock isn't set to real time.;I can't provide the exact time.
+как дела;Все хорошо, а у тебя?;Отлично, спасибо! Готов к работе.;Хорошо, спасибо!;Не жалуюсь, работаю!;Функционирую нормально.
+привет;Привет!;Как настрой?;Приветствую!;Здравствуй! Чем могу помочь?
+эй;Эй, как дела?;Привет!;Здравствуй!;Что нового?;Да?
+пока;До встречи!;Пока! Удачи!;Береги себя!;До свидания!;Всего доброго!
+как тебя зовут;Меня зовут ТестБот.;Я ТестБот, рад помочь!;Просто ТестБот.;Можете звать меня ТестБот.;Я ваш помощник ТестБот.
+как ты можешь помочь;Могу предоставить информацию по тестам и материалам.;Провожу тесты и показываю результаты по команде.;Готов помочь с командами, доступными через /start.;Помогаю с учебным процессом в части тестирования.;Помогаю с тестами, см. /start.
+спасибо;Всегда рад помочь!;Не за что!;Рад, что мог помочь.;С удовольствием!;Обращайтесь!
+доброе утро;Доброе утро!;Прекрасного дня!;Приветствую утром!;Хорошего начала дня!;С добрым утром!
+добрый день;Добрый день!;Как проходит день?;Приветствую!;Приятного дня!;Хорошего дня!
+добрый вечер;Добрый вечер!;Как вечер?;Привет!;Как настроение?;Приятного вечера!
+помощь,справка,команды;Отправьте команду /start для просмотра списка доступных команд.;Чтобы увидеть список команд, используйте /start.;Команда /start покажет все возможности.
+что ты умеешь;Я работаю с тестами: запускаю, показываю материалы и результаты. Список команд: /start.;Могу провести тест, показать учебные материалы или ваши оценки. Используйте /start.;Моя работа связана с тестами. Команда /start покажет, что я умею.;Я ваш помощник по тестам. См. /start.
+не понимаю;Можете повторить другими словами?;Я не совсем понял. Попробуйте иначе сформулировать.;Не уловил суть. Можете уточнить?;Возможно, команда /start поможет?;Попробуйте спросить иначе.
+понятно;Отлично!;Хорошо.;Ясно.;Принято.;Замечательно.
+хорошо;Отлично!;Замечательно!;Рад слышать!;Прекрасно!;Супер!
+плохо;Мне жаль это слышать.;Понимаю.;Могу чем-то помочь?;Сочувствую.
+который час;К сожалению, я не могу сказать точное время.;У меня нет доступа к реальному времени.;Подсказать время не могу.;Я не часы :)

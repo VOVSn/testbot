@@ -1,43 +1,10 @@
-# handlers/start_handler.py (Re-Re-Refactored)
-
-import datetime
 from telegram import Update
 from telegram.ext import ContextTypes, CommandHandler
 
-from db import get_collection
 from logging_config import logger
-
-# --- Helper to get user role ---
-async def get_user_role(user_id: int, username: str | None) -> str:
-    """
-    Retrieves the user's role from the database.
-    Defaults to 'student' if the user is not found.
-    Optionally adds the user as a 'student' if they don't exist.
-    """
-    users_collection = await get_collection('users')
-    user_data = await users_collection.find_one({'user_id': user_id})
-
-    if user_data:
-        return user_data.get('role', 'student') # Default role if field missing
-    else:
-        # User not found, treat as student and add them to DB
-        logger.info(f'User {user_id} (@{username}) not found. Adding as student.')
-        try:
-            await users_collection.insert_one({
-                'user_id': user_id,
-                'username': username,
-                'role': 'student',
-                'date_added': datetime.datetime.now(datetime.timezone.utc)
-                # TODO: Add first_name/last_name if available from Update
-            })
-            logger.info(f'Successfully added user {user_id} as student.')
-        except Exception as e:
-            # Log error but proceed treating them as student for this request
-            logger.error(f'Failed to add user {user_id} to DB: {e}')
-        return 'student'
+from utils.db_helpers import get_user_role
 
 
-# --- Command Handler ---
 async def start_command(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ) -> None:
@@ -50,11 +17,9 @@ async def start_command(
     username = update.effective_user.username
     logger.info(f'User {user_id} (@{username}) triggered /start command.')
 
-    # Get user role from database
     user_role = await get_user_role(user_id, username)
     logger.info(f'User {user_id} role determined as: {user_role}')
 
-    # --- Define Help Texts (with more emojis and corrected /results) ---
     admin_help = """
 🤖 Привет! Я - робот для тестирования студентов!
 
@@ -115,7 +80,5 @@ async def start_command(
     await update.message.reply_text(help_text)
 
 
-# --- Create the handler ---
 start_command_handler = CommandHandler('start', start_command)
-# Optional: Add alias for /help pointing to the same function
 help_command_handler = CommandHandler('help', start_command)
