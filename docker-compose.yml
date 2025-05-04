@@ -1,10 +1,49 @@
 services:
+  # --- Telegram Bot Service ---
   telegram-bot:
+    # Build the image from the Dockerfile in the current directory
     build: .
+    container_name: testbot-app # Optional: specific container name
+    # Load environment variables from the .env file in the root directory
+    # These variables will be available inside the bot container
     env_file:
       - .env
+    # Mount the current directory into the container's /app directory
+    # This allows code changes to be reflected without rebuilding the image
+    # (Python script still needs to be restarted or use a reloader if applicable)
     volumes:
       - ./:/app
+    # Optional: Expose a port if your bot uses webhooks (not needed for polling)
+    # ports:
+    #   - "8081:8081"
+    # Restart policy
+    restart: unless-stopped
+    # Specify that this service depends on the mongo-db service
+    # Docker Compose will attempt to start mongo-db before this service
+    depends_on:
+      - mongo-db
+
+  # --- MongoDB Service ---
+  mongo-db:
+    # Use an official MongoDB image (specify a major version like 6.0 or 7.0)
+    image: mongo:6.0
+    container_name: testbot-mongo # Optional: specific container name
+    # Restart policy
+    restart: unless-stopped
+    # Expose the MongoDB port to the host machine
+    # Allows connecting with tools like MongoDB Compass via localhost:27017
     ports:
-      - "8081:8081"
-    restart: always
+      - "27017:27017"
+    # Persist database data using a named volume
+    volumes:
+      - mongo-data:/data/db
+    # Set up initial root user credentials for MongoDB
+    # Uses variable substitution (${VAR_NAME}) from the root .env file
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS}
+
+# Define the named volume for persistent MongoDB data
+volumes:
+  mongo-data:
+    driver: local # Use the default local storage driver
