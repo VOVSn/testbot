@@ -10,4 +10,4 @@ _*/
 results/
 teachers.txt
 codebase
-codecollect.py
+codecollect*.py
