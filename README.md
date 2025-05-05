@@ -1,7 +1,7 @@
 # Telegram Testing Bot (MongoDB Version)
 
 [![Python Version](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) <!-- Adjust license if needed -->
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 This Telegram bot facilitates creating, managing, activating, and taking multiple-choice tests. It uses MongoDB for data persistence, python-telegram-bot for interacting with the Telegram API, and Docker Compose for easy local development.
 
@@ -100,8 +100,8 @@ This Telegram bot facilitates creating, managing, activating, and taking multipl
 
 2.  **Clone the Repository:**
     ```bash
-    git clone <your-repo-url>
-    cd <your-repo-name>
+    git clone https://github.com/VOVSn/testbot
+    cd testbot
     ```
 
 3.  **Create `.env` File:**
