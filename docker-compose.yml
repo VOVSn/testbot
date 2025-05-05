@@ -13,7 +13,7 @@ services:
     # (Python script still needs to be restarted or use a reloader if applicable)
     volumes:
       - ./:/app
-    # Optional: Expose a port if your bot uses webhooks (not needed for polling)
+    # Optional: Expose a port if the bot uses webhooks (not needed for polling)
     # ports:
     #   - "8081:8081"
     # Restart policy
