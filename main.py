@@ -9,7 +9,7 @@ from db import connect_db, close_db, get_db
 from utils.seed import seed_initial_data
 
 from handlers.activate_handler import activate_test_command_handler
-from handlers.add_handler import add_teacher_command_handler
+from handlers.add_handler import add_teacher_command_handler, add_teacher_by_id_command_handler
 
 from handlers.admin_handler import (
     add_admin_command_handler,
@@ -44,6 +44,7 @@ HANDLERS = [
     delete_test_command_handler,
     # Teacher Management
     add_teacher_command_handler,
+    add_teacher_by_id_command_handler,
     remove_teacher_command_handler,
     list_teachers_command_handler,
     # Test Management
