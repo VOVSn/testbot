@@ -1,49 +1,61 @@
 services:
   # --- Telegram Bot Service ---
   telegram-bot:
-    # Build the image from the Dockerfile in the current directory
     build: .
-    container_name: testbot-app # Optional: specific container name
-    # Load environment variables from the .env file in the root directory
-    # These variables will be available inside the bot container
+    container_name: testbot-app
     env_file:
       - .env
-    # Mount the current directory into the container's /app directory
-    # This allows code changes to be reflected without rebuilding the image
-    # (Python script still needs to be restarted or use a reloader if applicable)
     volumes:
       - ./:/app
-    # Optional: Expose a port if the bot uses webhooks (not needed for polling)
-    # ports:
-    #   - "8081:8081"
-    # Restart policy
     restart: unless-stopped
-    # Specify that this service depends on the mongo-db service
-    # Docker Compose will attempt to start mongo-db before this service
     depends_on:
+      # Bot depends on MongoDB being ready
       - mongo-db
 
   # --- MongoDB Service ---
   mongo-db:
-    # Use an official MongoDB image (specify a major version like 6.0 or 7.0)
     image: mongo:6.0
-    container_name: testbot-mongo # Optional: specific container name
-    # Restart policy
+    container_name: testbot-mongo
     restart: unless-stopped
-    # Expose the MongoDB port to the host machine
-    # Allows connecting with tools like MongoDB Compass via localhost:27017
     ports:
       - "27017:27017"
-    # Persist database data using a named volume
     volumes:
       - mongo-data:/data/db
-    # Set up initial root user credentials for MongoDB
-    # Uses variable substitution (${VAR_NAME}) from the root .env file
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}      # From .env
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS}      # From .env
+
+  # --- Mongo Express Service (NEW) ---
+  mongo-express:
+    image: mongo-express # Use the official image
+    container_name: testbot-mongo-express
+    restart: unless-stopped
+    ports:
+      # Map a host port (e.g., 8082) to the container's default port 8081
+      - "8082:8081"
+    environment:
+      # --- Connection Details for Mongo Express to find MongoDB ---
+      # Hostname is the service name of the MongoDB container
+      ME_CONFIG_MONGODB_SERVER: mongo-db
+      # Port is the default MongoDB port inside the container network
+      ME_CONFIG_MONGODB_PORT: 27017
+      # --- Authentication Credentials for Mongo Express TO USE for MongoDB ---
+      # Provide the SAME credentials used to initialize the MongoDB root user
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USER}      # From .env
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASS}      # From .env
+      # Specify the database MongoDB should use for authentication
+      ME_CONFIG_MONGODB_AUTH_DATABASE: admin
+      # Optional but recommended: Enable admin access features if needed
+      # ME_CONFIG_MONGODB_ENABLE_ADMIN: "true" # Usually implied by providing admin creds
+      # --- Basic HTTP Auth Credentials for accessing Mongo Express UI ---
+      # Use different credentials than your MongoDB root user for better practice
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USER} # From .env
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASS} # From .env
+    depends_on:
+      # Mongo Express needs MongoDB to be running before it can connect
+      - mongo-db
 
 # Define the named volume for persistent MongoDB data
 volumes:
   mongo-data:
-    driver: local # Use the default local storage driver
+    driver: local
