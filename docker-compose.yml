@@ -22,40 +22,33 @@ services:
     volumes:
       - mongo-data:/data/db
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}      # From .env
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS}      # From .env
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS}
+    healthcheck: # <-- ADD HEALTHCHECK
+      test: echo 'db.runCommand("ping").ok' | mongosh --quiet --username ${MONGO_USER} --password ${MONGO_PASS} --authenticationDatabase admin
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s # Give mongo time to start up before first healthcheck
 
-  # --- Mongo Express Service (NEW) ---
-  mongo-express:
-    image: mongo-express # Use the official image
-    container_name: testbot-mongo-express
-    restart: unless-stopped
-    ports:
-      # Map a host port (e.g., 8082) to the container's default port 8081
-      - "8082:8081"
-    environment:
-      # --- Connection Details for Mongo Express to find MongoDB ---
-      # Hostname is the service name of the MongoDB container
-      ME_CONFIG_MONGODB_SERVER: mongo-db
-      # Port is the default MongoDB port inside the container network
-      ME_CONFIG_MONGODB_PORT: 27017
-      # --- Authentication Credentials for Mongo Express TO USE for MongoDB ---
-      # Provide the SAME credentials used to initialize the MongoDB root user
-      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USER}      # From .env
-      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASS}      # From .env
-      # Specify the database MongoDB should use for authentication
-      ME_CONFIG_MONGODB_AUTH_DATABASE: admin
-      # Optional but recommended: Enable admin access features if needed
-      # ME_CONFIG_MONGODB_ENABLE_ADMIN: "true" # Usually implied by providing admin creds
-      # --- Basic HTTP Auth Credentials for accessing Mongo Express UI ---
-      # Use different credentials than your MongoDB root user for better practice
-      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USER} # From .env
-      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASS} # From .env
-    depends_on:
-      # Mongo Express needs MongoDB to be running before it can connect
-      - mongo-db
+  # mongo-express:
+  #   image: mongo-express
+  #   container_name: testbot-mongo-express
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8082:8081"
+  #   environment:
+  #     ME_CONFIG_MONGODB_SERVER: mongo-db
+  #     ME_CONFIG_MONGODB_PORT: 27017
+  #     ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USER}
+  #     ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASS}
+  #     ME_CONFIG_MONGODB_AUTH_DATABASE: admin
+  #     ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USER}
+  #     ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASS}
+  #   depends_on:
+  #     mongo-db: # <-- MODIFY DEPENDS_ON
+  #       condition: service_healthy # Wait for mongo-db to be healthy
 
-# Define the named volume for persistent MongoDB data
 volumes:
   mongo-data:
     driver: local

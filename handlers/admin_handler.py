@@ -11,12 +11,12 @@ from utils.db_helpers import get_user_role
 from utils.common_helpers import normalize_test_id
 
 # Helper to check if user is admin
-async def _is_admin(user_id: int, username: str | None) -> bool:
+async def _is_admin(user_id: int, username) -> bool:
     role = await get_user_role(user_id, username)
     return role == 'admin'
 
 # Helper to find user by username (could move to db_helpers)
-async def _find_user_by_username(username: str) -> dict | None:
+async def _find_user_by_username(username: str):
     if not username: return None
     clean_username = username[1:] if username.startswith('@') else username
     if not clean_username: return None

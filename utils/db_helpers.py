@@ -4,7 +4,7 @@ from logging_config import logger
 # We might need Update/ContextTypes if helpers interact directly with them,
 # but get_user_role only needs basic types for now.
 
-async def get_user_role(user_id: int, username: str | None) -> str:
+async def get_user_role(user_id: int, username) -> str:
     """
     Retrieves the user's role from the database.
     Defaults to 'student' and adds the user if they are not found.

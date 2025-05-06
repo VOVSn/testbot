@@ -1,6 +1,6 @@
 import re
 
-def normalize_test_id(raw_id: str | None) -> str:
+def normalize_test_id(raw_id) -> str:
     """
     Normalizes a test ID by removing 'test' prefix (case-insensitive),
     underscores, and converting to lowercase. Returns empty string if

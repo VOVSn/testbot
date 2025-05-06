@@ -24,7 +24,7 @@ CANCEL_TEST = 'cancel_test'
 
 async def test_command(
     update: Update, context: ContextTypes.DEFAULT_TYPE
-) -> int | None:
+):
     """Entry point for the /test command and conversation."""
     if not update.effective_user or not update.message:
         return ConversationHandler.END

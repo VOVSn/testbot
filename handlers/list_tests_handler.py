@@ -64,7 +64,7 @@ async def list_tests_command(
         test_list_str = '\n'.join(test_list_items)
         await update.message.reply_text(
             f'📚 Доступные тесты:\n{test_list_str}',
-            parse_mode='MarkdownV2' # Use Markdown for backticks
+            # parse_mode='MarkdownV2' # Use Markdown for backticks
         )
 
 

@@ -55,7 +55,7 @@ async def help_act_test_command(
         return # Silently ignore if not admin/teacher
 
     logger.info(f"User {update.effective_user.id} requested help for /act_test.")
-    await update.message.reply_text(HELP_ACT_TEST_TEXT, parse_mode='MarkdownV2')
+    await update.message.reply_text(HELP_ACT_TEST_TEXT)
 
 
 help_act_test_command_handler = CommandHandler('help_act_test', help_act_test_command)

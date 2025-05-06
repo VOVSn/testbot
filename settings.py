@@ -26,6 +26,14 @@ LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO').upper() # Default to INFO
 TEMP_FOLDER = 'temp_files'
 os.makedirs(TEMP_FOLDER, exist_ok=True) # Ensure temp dir exists
 
+
+INITIAL_SEED_ENABLED = os.getenv('INITIAL_SEED_ENABLED', 'False').lower() in ('true', '1', 't', 'yes')
+TESTS_SEED_FOLDER = os.getenv('TESTS_SEED_FOLDER', 'seed_data/tests') # Use default relative paths
+TEACHERS_SEED_FILE = os.getenv('TEACHERS_SEED_FILE', 'seed_data/teachers.txt')
+
+
+
+
 # --- Validation ---
 REQUIRED_VARS = {
     'TOKEN': TOKEN,

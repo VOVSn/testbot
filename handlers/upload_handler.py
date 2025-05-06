@@ -179,70 +179,100 @@ async def _handle_test_csv_upload(update: Update, context: ContextTypes.DEFAULT_
 
     logger.info(f"Processing CSV upload for test_id '{test_id}' from file '{file_name}'.")
 
-    # 2. Download and Parse CSV
     questions_data = []
     try:
         file_obj = await context.bot.get_file(tg_file_id)
-        # Download to memory
         csv_bytes = io.BytesIO()
         await file_obj.download_to_memory(csv_bytes)
         csv_bytes.seek(0)
-        # Decode assuming UTF-8, handle potential errors
         try:
             csv_text = csv_bytes.read().decode('utf-8')
         except UnicodeDecodeError:
-             logger.warning(f"CSV file '{file_name}' for test '{test_id}' is not UTF-8 encoded.")
-             await update.message.reply_text(
-                 "⛔ Ошибка: Файл CSV должен быть в кодировке UTF-8."
-                 "\nПожалуйста, сохраните файл в UTF-8 и отправьте снова, или /cancel."
-             )
-             return UPLOAD_FILE
+            logger.warning(f"CSV file '{file_name}' for test '{test_id}' is not UTF-8 encoded.")
+            await update.message.reply_text(
+                "⛔ Ошибка: Файл CSV должен быть в кодировке UTF-8.\n"
+                "Пожалуйста, сохраните файл в UTF-8 и отправьте снова, или /cancel."
+            )
+            return UPLOAD_FILE
 
         csv_reader = csv.reader(io.StringIO(csv_text), delimiter=';')
-
         line_num = 0
         for row in csv_reader:
             line_num += 1
-            if not row or not row[0].strip(): # Skip empty rows or rows without question
+            if not row or not row[0].strip():
                 continue
-            if len(row) < 2:
-                logger.warning(f"Skipping invalid row {line_num} in test '{test_id}' CSV: {row}")
-                await update.message.reply_text(f"⚠️ Предупреждение: Пропущена строка {line_num} (недостаточно данных).")
+            
+            # Expecting: Question;CorrectAnswerText;Opt1;Opt2;Opt3;Opt4
+            if len(row) < 3: # Must have at least Question, CorrectAnswerText, and one Option
+                logger.warning(f"Skipping invalid row {line_num} in test '{test_id}' CSV (not enough columns): {row}")
+                await update.message.reply_text(f"⚠️ Предупреждение: Пропущена строка {line_num} (недостаточно колонок).")
                 continue
 
             question_text = row[0].strip()
-            # Assume correct answer is the first option provided
-            correct_answer = row[1].strip()
-            other_options = [opt.strip() for opt in row[2:] if opt.strip()]
+            correct_answer_text = row[1].strip() # The textual value of the correct answer
+            
+            # The actual options to present to the user are from column 2 onwards (index 2)
+            # Filter out empty strings that might result from trailing semicolons
+            actual_options = [opt.strip() for opt in row[2:] if opt.strip()] 
 
-            if not correct_answer:
-                 logger.warning(f"Skipping row {line_num} in test '{test_id}' CSV: Missing correct answer.")
-                 await update.message.reply_text(f"⚠️ Предупреждение: Пропущена строка {line_num} (нет правильного ответа).")
-                 continue
+            if not question_text:
+                logger.warning(f"Skipping row {line_num} in test '{test_id}' CSV: Empty question text.")
+                await update.message.reply_text(f"⚠️ Предупреждение: Пропущена строка {line_num} (пустой текст вопроса).")
+                continue
+            
+            if not correct_answer_text:
+                logger.warning(f"Skipping row {line_num} in test '{test_id}' CSV: Empty correct answer text.")
+                await update.message.reply_text(f"⚠️ Предупреждение: Пропущена строка {line_num} (пустой текст правильного ответа).")
+                continue
 
-            # Combine options, ensuring correct one is present
-            all_options = [correct_answer] + other_options
-            # Simple deduplication while preserving order (if needed)
-            # unique_options = list(dict.fromkeys(all_options))
-            # Let's assume duplicates are allowed for now, maybe shuffle later
+            if not actual_options:
+                logger.warning(f"Skipping row {line_num} in test '{test_id}' CSV: No options provided.")
+                await update.message.reply_text(f"⚠️ Предупреждение: Пропущена строка {line_num} (нет вариантов ответа).")
+                continue
+
+            # Find the index of the correct_answer_text within the actual_options
+            try:
+                # Ensure case-sensitive match, or convert both to lower for case-insensitive
+                # For simplicity, let's assume case-sensitive as per typical test requirements
+                correct_option_idx = actual_options.index(correct_answer_text)
+            except ValueError:
+                logger.warning(
+                    f"Skipping row {line_num} in test '{test_id}' CSV: Correct answer text "
+                    f"'{correct_answer_text}' not found in the provided options {actual_options}."
+                )
+                await update.message.reply_text(
+                    f"⚠️ Предупреждение: В строке {line_num} текст правильного ответа "
+                    f"'{correct_answer_text}' не найден среди вариантов. Строка пропущена."
+                )
+                continue
+            
+            # Ensure a specific number of options if required, e.g., exactly 4
+            # For now, we'll use whatever is provided in actual_options.
+            # Example: If you require exactly 4 options:
+            # if len(actual_options) != 4:
+            #     logger.warning(f"Skipping row {line_num}: Expected 4 options, got {len(actual_options)}")
+            #     await update.message.reply_text(f"⚠️ Предупреждение: Строка {line_num} должна содержать 4 варианта ответа.")
+            #     continue
+
+
             questions_data.append({
                 'question_text': question_text,
-                'options': all_options,
-                'correct_option_index': 0 # Correct answer is always first in our structure
+                'options': actual_options, # These are now [Opt1, Opt2, CorrectAnswer, Opt3] or similar
+                'correct_option_index': correct_option_idx # Index of correct_answer_text in actual_options
             })
 
         if not questions_data:
             logger.warning(f"No valid questions found in CSV for test '{test_id}'.")
             await update.message.reply_text(
-                "⛔ Ошибка: Не найдено ни одного корректного вопроса в CSV файле."
-                 "\nПроверьте формат и отправьте снова, или /cancel."
+                "⛔ Ошибка: Не найдено ни одного корректного вопроса в CSV файле.\n"
+                "Проверьте формат и отправьте снова, или /cancel."
             )
             return UPLOAD_FILE
 
     except Exception as e:
         logger.exception(f"Error processing CSV for test '{test_id}': {e}")
         await update.message.reply_text(f"❌ Произошла ошибка при обработке CSV файла: {e}")
-        return ConversationHandler.END # Exit conversation on processing error
+        return ConversationHandler.END
 
     # 3. Update Database (Upsert)
     try:
