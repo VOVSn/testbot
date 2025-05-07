@@ -1,4 +1,4 @@
-# handlers/load_handler.py (Refactored)
+# handlers/upload_handler.py
 
 import csv
 import io
@@ -59,12 +59,15 @@ async def upload_command(
         # --- Mode: Upload Test CSV ---
         context.user_data['upload_mode'] = 'test_csv'
         await update.message.reply_text(
-            "⬆️ **Загрузка теста:**\n"
+            "⬆️ **Загрузка теста (CSV):**\n"
             "Пожалуйста, отправьте файл CSV с вопросами.\n"
             "Имя файла должно быть `test<ID>.csv` (например, `testMath101.csv`).\n"
             "Разделитель: точка с запятой (;).\n"
             "Кодировка: UTF-8.\n"
-            "Структура: `Вопрос;Правильный ответ;Ответ2;Ответ3...`\n\n"
+            "Структура (6 колонок):\n"
+            "`Вопрос;ТекстПравильногоОтвета;Опция1;Опция2;Опция3;Опция4`\n"
+            "- `ТекстПравильногоОтвета` должен быть одним из Опция1-Опция4.\n"
+            "- Все 4 опции должны быть заполнены.\n\n"
             "Или используйте /cancel для отмены."
         )
         return UPLOAD_FILE # Go directly to waiting for the file
@@ -101,17 +104,16 @@ async def handle_file_upload(
 ) -> int:
     """Handles receiving attachments based on the upload mode."""
     if not update.effective_user or not update.message:
-        return ConversationHandler.END # Should not happen with MessageHandler
+        return ConversationHandler.END
 
     user_id = update.effective_user.id
-    username = update.effective_user.username
+    # username = update.effective_user.username # Not used directly here
     upload_mode = context.user_data.get('upload_mode')
 
-    # Determine file type and get file object
     file_type = None
     file = None
     file_name = "unknown_file"
-    tg_file_id = None
+    # tg_file_id = None # Assigned below
 
     if update.message.document:
         file_type = 'document'
@@ -119,7 +121,7 @@ async def handle_file_upload(
         file_name = file.file_name or f"{file_type}_{file.file_unique_id}.dat"
     elif update.message.photo:
         file_type = 'photo'
-        file = update.message.photo[-1] # Highest resolution
+        file = update.message.photo[-1]
         file_name = f"{file_type}_{file.file_unique_id}.jpg"
     elif update.message.video:
         file_type = 'video'
@@ -133,13 +135,18 @@ async def handle_file_upload(
     if not file_type or not file:
         logger.warning(f"Could not determine file type for upload from user {user_id}.")
         await update.message.reply_text("Не удалось распознать тип файла. Попробуйте еще раз или /cancel.")
-        return UPLOAD_FILE # Stay in state
+        return UPLOAD_FILE
 
     tg_file_id = file.file_id
     logger.info(f"User {user_id} uploaded {file_type} '{file_name}' (ID: {tg_file_id}) in mode '{upload_mode}'.")
 
-    # --- Process based on Mode ---
     if upload_mode == 'test_csv':
+        if file_type != 'document' or not file_name.lower().endswith('.csv'):
+            await update.message.reply_text(
+                "⛔ Для загрузки теста ожидается CSV файл (с расширением .csv).\n"
+                "Пожалуйста, отправьте корректный файл или /cancel."
+            )
+            return UPLOAD_FILE
         return await _handle_test_csv_upload(update, context, file_name, tg_file_id, user_id)
     elif upload_mode == 'materials':
         return await _handle_material_upload(update, context, file_name, tg_file_id, file_type, user_id)
@@ -151,27 +158,25 @@ async def handle_file_upload(
 
 async def _handle_test_csv_upload(update: Update, context: ContextTypes.DEFAULT_TYPE, file_name: str, tg_file_id: str, user_id: int) -> int:
     """Processes an uploaded CSV file intended as a test bank."""
-    # 1. Validate filename format
     match = re.match(r'^test.*\.csv$', file_name, re.IGNORECASE)
     if not match:
         await update.message.reply_text(
             "⛔ Имя файла должно быть `test<ID>.csv` (например, testMath101.csv).\n"
             "Пожалуйста, переименуйте и отправьте снова, или /cancel."
         )
-        return UPLOAD_FILE # Remain waiting for a correct file
+        return UPLOAD_FILE
 
-    # Extract raw ID (part after 'test' and before '.csv')
     raw_test_id_match = re.search(r'^test(.*)\.csv$', file_name, re.IGNORECASE)
     if not raw_test_id_match or not raw_test_id_match.group(1):
          await update.message.reply_text(
              "⛔ Не удалось извлечь ID из имени файла `test<ID>.csv`.\n"
-             "Убедитесь, что ID присутствует (например, test_FINAL.csv)."
-              "Пожалуйста, переименуйте и отправьте снова, или /cancel."
+             "Убедитесь, что ID присутствует (например, test_FINAL.csv).\n"
+             "Пожалуйста, переименуйте и отправьте снова, или /cancel."
          )
          return UPLOAD_FILE
 
     raw_test_id = raw_test_id_match.group(1)
-    test_id = normalize_test_id(raw_test_id) # Normalize the extracted ID
+    test_id = normalize_test_id(raw_test_id)
 
     if not test_id:
          await update.message.reply_text("⛔ Некорректный ID теста, извлеченный из имени файла.")
@@ -199,128 +204,104 @@ async def _handle_test_csv_upload(update: Update, context: ContextTypes.DEFAULT_
         line_num = 0
         for row in csv_reader:
             line_num += 1
-            if not row or not row[0].strip():
+            if not row or not row[0].strip(): # Skip empty lines or lines with no question
                 continue
             
-            # Expecting: Question;CorrectAnswerText;Opt1;Opt2;Opt3;Opt4
-            if len(row) < 3: # Must have at least Question, CorrectAnswerText, and one Option
-                logger.warning(f"Skipping invalid row {line_num} in test '{test_id}' CSV (not enough columns): {row}")
-                await update.message.reply_text(f"⚠️ Предупреждение: Пропущена строка {line_num} (недостаточно колонок).")
+            # Validate column count: Expecting Question;CorrectText;Opt1;Opt2;Opt3;Opt4 (6 columns)
+            if len(row) != 6:
+                msg = (f"⚠️ Строка {line_num}: Ожидалось 6 колонок (Вопрос;ПравильныйОтвет;"
+                       f"Опция1;Опция2;Опция3;Опция4), найдено {len(row)}. Строка пропущена.")
+                logger.warning(f"Test '{test_id}' CSV: {msg} Content: {row}")
+                await update.message.reply_text(msg)
                 continue
 
             question_text = row[0].strip()
-            correct_answer_text = row[1].strip() # The textual value of the correct answer
-            
-            # The actual options to present to the user are from column 2 onwards (index 2)
-            # Filter out empty strings that might result from trailing semicolons
-            actual_options = [opt.strip() for opt in row[2:] if opt.strip()] 
+            correct_answer_text = row[1].strip()
+            # These are the 4 options for the user
+            options_texts = [s.strip() for s in row[2:6]] 
 
+            # --- Validations ---
             if not question_text:
-                logger.warning(f"Skipping row {line_num} in test '{test_id}' CSV: Empty question text.")
-                await update.message.reply_text(f"⚠️ Предупреждение: Пропущена строка {line_num} (пустой текст вопроса).")
+                msg = f"⚠️ Строка {line_num}: Текст вопроса (1-я колонка) не может быть пустым. Строка пропущена."
+                logger.warning(f"Test '{test_id}' CSV: {msg} Content: {row}")
+                await update.message.reply_text(msg)
                 continue
             
             if not correct_answer_text:
-                logger.warning(f"Skipping row {line_num} in test '{test_id}' CSV: Empty correct answer text.")
-                await update.message.reply_text(f"⚠️ Предупреждение: Пропущена строка {line_num} (пустой текст правильного ответа).")
+                msg = f"⚠️ Строка {line_num}: Текст правильного ответа (2-я колонка) не может быть пустым. Строка пропущена."
+                logger.warning(f"Test '{test_id}' CSV: {msg} Content: {row}")
+                await update.message.reply_text(msg)
                 continue
 
-            if not actual_options:
-                logger.warning(f"Skipping row {line_num} in test '{test_id}' CSV: No options provided.")
-                await update.message.reply_text(f"⚠️ Предупреждение: Пропущена строка {line_num} (нет вариантов ответа).")
-                continue
-
-            # Find the index of the correct_answer_text within the actual_options
-            try:
-                # Ensure case-sensitive match, or convert both to lower for case-insensitive
-                # For simplicity, let's assume case-sensitive as per typical test requirements
-                correct_option_idx = actual_options.index(correct_answer_text)
-            except ValueError:
-                logger.warning(
-                    f"Skipping row {line_num} in test '{test_id}' CSV: Correct answer text "
-                    f"'{correct_answer_text}' not found in the provided options {actual_options}."
-                )
-                await update.message.reply_text(
-                    f"⚠️ Предупреждение: В строке {line_num} текст правильного ответа "
-                    f"'{correct_answer_text}' не найден среди вариантов. Строка пропущена."
-                )
+            if any(not opt for opt in options_texts):
+                msg = (f"⚠️ Строка {line_num}: Все 4 варианта ответа (колонки 3-6) должны быть заполнены. "
+                       "Строка пропущена.")
+                logger.warning(f"Test '{test_id}' CSV: {msg} Content: {row}")
+                await update.message.reply_text(msg)
                 continue
             
-            # Ensure a specific number of options if required, e.g., exactly 4
-            # For now, we'll use whatever is provided in actual_options.
-            # Example: If you require exactly 4 options:
-            # if len(actual_options) != 4:
-            #     logger.warning(f"Skipping row {line_num}: Expected 4 options, got {len(actual_options)}")
-            #     await update.message.reply_text(f"⚠️ Предупреждение: Строка {line_num} должна содержать 4 варианта ответа.")
-            #     continue
-
-
+            # Find the index of the correct_answer_text within the 4 options_texts
+            try:
+                correct_option_idx = options_texts.index(correct_answer_text)
+            except ValueError:
+                msg = (f"⚠️ Строка {line_num}: Текст правильного ответа из 2-й колонки ('{correct_answer_text}') "
+                       f"не найден среди 4-х вариантов ответа ({', '.join(options_texts)}). Строка пропущена.")
+                logger.warning(f"Test '{test_id}' CSV: {msg} Content: {row}")
+                await update.message.reply_text(msg)
+                continue
+            
             questions_data.append({
                 'question_text': question_text,
-                'options': actual_options, # These are now [Opt1, Opt2, CorrectAnswer, Opt3] or similar
-                'correct_option_index': correct_option_idx # Index of correct_answer_text in actual_options
+                'options': options_texts,  # Store the 4 options
+                'correct_option_index': correct_option_idx 
             })
 
         if not questions_data:
             logger.warning(f"No valid questions found in CSV for test '{test_id}'.")
             await update.message.reply_text(
                 "⛔ Ошибка: Не найдено ни одного корректного вопроса в CSV файле.\n"
-                "Проверьте формат и отправьте снова, или /cancel."
+                "Проверьте формат, количество колонок (должно быть 6) и заполненность данных. "
+                "Отправьте исправленный файл или /cancel."
             )
             return UPLOAD_FILE
 
     except Exception as e:
         logger.exception(f"Error processing CSV for test '{test_id}': {e}")
         await update.message.reply_text(f"❌ Произошла ошибка при обработке CSV файла: {e}")
-        return ConversationHandler.END
+        return ConversationHandler.END # End conversation on unexpected error
 
     # 3. Update Database (Upsert)
     try:
         tests_collection = await get_collection('tests')
         utc_now = datetime.datetime.now(datetime.timezone.utc)
 
-        # Data that always gets updated or set
         set_data = {
             'questions': questions_data,
             'total_questions': len(questions_data),
             'uploaded_by_user_id': user_id,
             'upload_timestamp': utc_now,
-            # Consider adding title update here if desired, e.g., based on ID
-            'title': f"Тест {test_id}" # Default title
+            'title': f"Тест {test_id}" 
         }
-        # Data that only gets set when inserting a new document
-        set_on_insert_data = {
-            'test_id': test_id,
-            # Add 'date_created': utc_now here if needed
-        }
+        set_on_insert_data = {'test_id': test_id}
 
         update_result = await tests_collection.update_one(
             {'test_id': test_id},
-            {
-                '$set': set_data,
-                '$setOnInsert': set_on_insert_data
-            },
+            {'$set': set_data, '$setOnInsert': set_on_insert_data},
             upsert=True
         )
 
+        num_q = len(questions_data)
         if update_result.upserted_id:
-            logger.info(f"Successfully created test '{test_id}' with {len(questions_data)} questions by user {user_id}.")
-            await update.message.reply_text(
-                f"✅ Тест '{test_id}' ({len(questions_data)} вопр.) успешно создан!"
-            )
+            logger.info(f"Successfully created test '{test_id}' with {num_q} questions by user {user_id}.")
+            await update.message.reply_text(f"✅ Тест '{test_id}' ({num_q} вопр.) успешно создан!")
         elif update_result.modified_count:
-             logger.info(f"Successfully updated test '{test_id}' with {len(questions_data)} questions by user {user_id}.")
-             await update.message.reply_text(
-                 f"✅ Тест '{test_id}' ({len(questions_data)} вопр.) успешно обновлен!"
-             )
+             logger.info(f"Successfully updated test '{test_id}' with {num_q} questions by user {user_id}.")
+             await update.message.reply_text(f"✅ Тест '{test_id}' ({num_q} вопр.) успешно обновлен!")
         else:
-             # This case (matched but not modified) might mean the content was identical
-             logger.info(f"Test '{test_id}' data submitted by user {user_id} was identical to existing data.")
-             await update.message.reply_text(
-                 f"ℹ️ Данные для теста '{test_id}' не изменились."
-             )
+             logger.info(f"Test '{test_id}' data by user {user_id} was identical to existing.")
+             await update.message.reply_text(f"ℹ️ Данные для теста '{test_id}' не изменились ({num_q} вопр.).")
 
-        return ConversationHandler.END # End conversation after successful CSV upload
+        return ConversationHandler.END
 
     except Exception as e:
         logger.exception(f"Database error upserting test '{test_id}': {e}")
@@ -336,7 +317,6 @@ async def _handle_material_upload(update: Update, context: ContextTypes.DEFAULT_
         await update.message.reply_text("Внутренняя ошибка: ID теста не найден. Начните заново с `/upload <ID>`.")
         return ConversationHandler.END
 
-    # Insert material metadata into DB
     try:
         materials_collection = await get_collection('materials')
         material_doc = {
@@ -354,7 +334,7 @@ async def _handle_material_upload(update: Update, context: ContextTypes.DEFAULT_
             f"✅ Файл '{file_name}' добавлен к тесту '{test_id}'.\n"
             f"Отправьте еще файлы или /cancel для завершения."
         )
-        return UPLOAD_FILE # Stay in state to receive more files
+        return UPLOAD_FILE
 
     except Exception as e:
         logger.exception(f"Database error saving material for test '{test_id}': {e}")
@@ -362,7 +342,7 @@ async def _handle_material_upload(update: Update, context: ContextTypes.DEFAULT_
             f"❌ Ошибка при сохранении файла '{file_name}' в базу данных."
             "\nПопробуйте отправить его снова или /cancel."
         )
-        return UPLOAD_FILE # Stay in state, allow retry or cancel
+        return UPLOAD_FILE
 
 
 async def cancel_upload(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -371,24 +351,19 @@ async def cancel_upload(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     mode = context.user_data.get('upload_mode', 'unknown')
     logger.info(f"User {user_id} canceled the /upload operation (mode: {mode}).")
     await update.message.reply_text("Загрузка отменена.")
-    # Clear user_data specific to this conversation
     context.user_data.pop('upload_mode', None)
     context.user_data.pop('test_id', None)
     return ConversationHandler.END
 
 
-# Rename the main handler variable
 upload_command_handler = ConversationHandler(
     entry_points=[CommandHandler('upload', upload_command)],
     states={
         UPLOAD_FILE: [
             MessageHandler(ATTACHMENT_FILTER, handle_file_upload),
-            # Could add specific message if user sends text instead of file
-            MessageHandler(filters.TEXT & ~filters.COMMAND, lambda u, c: u.message.reply_text("Пожалуйста, отправьте файл или /cancel.")),
+            MessageHandler(filters.TEXT & ~filters.COMMAND, 
+                           lambda u, c: u.message.reply_text("Пожалуйста, отправьте файл или используйте /cancel для отмены.")),
         ],
-        # No need for UPLOAD_TYPE state if entry point decides mode
     },
     fallbacks=[CommandHandler('cancel', cancel_upload)],
-    # Optional: Add conversation timeout
-    # conversation_timeout=60*10 # 10 minutes
 )
