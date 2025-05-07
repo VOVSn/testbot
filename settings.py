@@ -1,29 +1,68 @@
-import os
+# settings.py
 
+import os
 from dotenv import load_dotenv
 
-
-MATERIALS_FOLDER = 'materials'
-GRADES_FOLDER = 'grades'
-TESTS_FOLDER = 'tests'
-RESULTS_FOLDER = 'results'
-
+# Load environment variables from .env file
 load_dotenv()
+
+# --- Core Bot Settings ---
 TOKEN = os.getenv('TOKEN')
 BOT_USERNAME = os.getenv('BOT_USERNAME')
-ADMIN_USERNAME = os.getenv('ADMIN_USERNAME')
-TEACHER_USERNAMES_FILE = os.getenv('TEACHER_USERNAMES_FILE', 'teachers.txt')
 
-if not TOKEN or not BOT_USERNAME or not ADMIN_USERNAME:
+# --- Administrator Identification ---
+# Username for reference/display purposes
+ADMIN_USERNAME = os.getenv('ADMIN_USERNAME')
+# Telegram User ID is the primary identifier for the admin role
+ADMIN_USER_ID = os.getenv('ADMIN_USER_ID')
+
+# --- Database Settings ---
+MONGO_URI = os.getenv('MONGO_URI')
+MONGO_DB_NAME = os.getenv('MONGO_DB_NAME')
+
+# --- Logging Configuration ---
+LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO').upper() # Default to INFO
+
+TEMP_FOLDER = 'temp_files'
+os.makedirs(TEMP_FOLDER, exist_ok=True) # Ensure temp dir exists
+
+
+INITIAL_SEED_ENABLED = os.getenv('INITIAL_SEED_ENABLED', 'False').lower() in ('true', '1', 't', 'yes')
+TESTS_SEED_FOLDER = os.getenv('TESTS_SEED_FOLDER', 'seed_data/tests') # Use default relative paths
+TEACHERS_SEED_FILE = os.getenv('TEACHERS_SEED_FILE', 'seed_data/teachers.txt')
+
+
+
+
+# --- Validation ---
+REQUIRED_VARS = {
+    'TOKEN': TOKEN,
+    'BOT_USERNAME': BOT_USERNAME,
+    'ADMIN_USERNAME': ADMIN_USERNAME,
+    'ADMIN_USER_ID': ADMIN_USER_ID,
+    'MONGO_URI': MONGO_URI,
+    'MONGO_DB_NAME': MONGO_DB_NAME,
+}
+
+missing_vars = [k for k, v in REQUIRED_VARS.items() if not v]
+if missing_vars:
     raise ValueError(
-        "Missing required environment variables:"
-        " TOKEN, BOT_USERNAME, or ADMIN_USERNAME"
+        f'Missing required environment variables: {", ".join(missing_vars)}'
     )
 
+# Validate ADMIN_USER_ID is an integer
+try:
+    int(ADMIN_USER_ID)
+except (ValueError, TypeError):
+    raise ValueError(
+        f'ADMIN_USER_ID must be a valid integer,'
+        f' received: {ADMIN_USER_ID}'
+    )
 
-def load_teachers():
-    if not os.path.exists(TEACHER_USERNAMES_FILE):
-        return []
-
-    with open(TEACHER_USERNAMES_FILE, 'r') as file:
-        return [line.strip() for line in file.readlines()]
+# Validate Log Level
+valid_log_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
+if LOG_LEVEL not in valid_log_levels:
+     raise ValueError(
+         f'Invalid LOG_LEVEL: {LOG_LEVEL}.'
+         f' Must be one of {", ".join(valid_log_levels)}'
+     )

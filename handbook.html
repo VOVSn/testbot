@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Testing Bot Handbook</title>
+    <style>
+        /* Basic Styling */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            line-height: 1.7;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            color: #343a40;
+        }
+        .container {
+            max-width: 950px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            padding: 20px 30px 30px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+        h1, h2, h3 {
+            color: #0d6efd; /* Bootstrap blue */
+        }
+        h1 {
+            text-align: center;
+            border-bottom: 2px solid #dee2e6;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+            font-weight: 500;
+        }
+        h2 {
+            margin-top: 25px;
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 8px;
+            font-size: 1.4em;
+            font-weight: 500;
+        }
+        h3 {
+            margin-top: 20px;
+            color: #0d6efd;
+             font-size: 1.15em;
+            font-weight: 500;
+        }
+        code {
+            background-color: #e9ecef;
+            padding: 0.2em 0.4em;
+            margin: 0;
+            font-size: 85%;
+            border-radius: 3px;
+            font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            color: #d63384; /* Bootstrap pink */
+        }
+        strong {
+            font-weight: 600;
+        }
+        ul {
+            padding-left: 25px;
+            list-style: none; /* Remove default bullets */
+        }
+        li {
+            margin-bottom: 15px;
+            padding-left: 1.5em;
+            position: relative;
+        }
+        /* Custom bullet */
+        li::before {
+            content: "🔹"; /* Unicode character for a bullet */
+            color: #0d6efd;
+            font-size: 0.8em;
+            position: absolute;
+            left: 0;
+            top: 0.1em;
+        }
+        p {
+            margin-top: 0.5em;
+            margin-bottom: 0.5em;
+        }
+        .command-desc {
+            margin-left: 0px; /* No extra indent needed now */
+            font-size: 0.95em;
+            color: #495057;
+        }
+        .intro-text {
+            margin-bottom: 20px;
+            font-size: 1.05em;
+            color: #212529;
+        }
+
+        /* Language & Tab Switcher Styling */
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #dee2e6;
+            flex-wrap: wrap; /* Allow wrapping on small screens */
+        }
+        .lang-switcher, .tab-switcher {
+            margin-bottom: 10px; /* Space between switchers if they wrap */
+        }
+        .control-button {
+            padding: 8px 16px;
+            margin: 0 4px;
+            cursor: pointer;
+            border: 1px solid #adb5bd;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+            font-size: 0.9em;
+            transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+        }
+        .control-button:hover {
+            background-color: #e9ecef;
+            border-color: #6c757d;
+        }
+        .control-button.active {
+            background-color: #0d6efd;
+            color: #fff;
+            border-color: #0d6efd;
+        }
+
+        /* Tab Content Styling */
+        .tab-pane {
+            display: none; /* Hide all tab panes initially */
+            border-top: 1px solid #dee2e6;
+            padding-top: 20px;
+        }
+        .tab-pane.active {
+            display: block; /* Show active tab pane */
+        }
+
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            .controls {
+                flex-direction: column;
+                align-items: stretch; /* Make buttons full width */
+            }
+            .lang-switcher, .tab-switcher {
+                 display: flex;
+                 justify-content: center;
+                 flex-wrap: wrap;
+                 margin-bottom: 15px;
+            }
+             .control-button {
+                 margin: 5px;
+             }
+            .container {
+                padding: 15px;
+            }
+            h1 {
+                font-size: 1.6em;
+            }
+            h2 {
+                font-size: 1.3em;
+            }
+            li::before {
+                 top: 0.2em;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Telegram Testing Bot Handbook / Справочник по боту для тестирования</h1>
+
+    <div class="controls">
+        <div class="lang-switcher">
+            <button id="lang-toggle-btn" class="control-button" onclick="toggleLanguage()" title="Switch Language / Сменить язык">
+                🌐 <span id="lang-toggle-text">English</span> <!-- Text shows the language you will switch TO -->
+            </button>
+        </div>
+         <div class="tab-switcher">
+            <button id="tab-btn-student" class="control-button active" onclick="switchTab('student')">🎓 Student</button>
+            <button id="tab-btn-teacher" class="control-button" onclick="switchTab('teacher')">👩‍🏫 Teacher</button>
+            <button id="tab-btn-admin" class="control-button" onclick="switchTab('admin')">🛠️ Admin</button>
+        </div>
+    </div>
+
+    <!-- Content Area -->
+    <div id="content-area">
+        <!-- Content divs will be dynamically populated or shown/hidden -->
+        <!-- English Content Panes -->
+        <div id="pane-en-student" class="tab-pane lang-pane-en active">
+            <h2><span role="img" aria-label="student">🎓</span> Student Guide</h2>
+            <p class="intro-text">As a student, you can take available tests and view your results.</p>
+            <h3>Taking Tests & Viewing Materials/Results</h3>
+             <ul>
+                 <li>
+                    <p><code>/test [test_id]</code></p>
+                    <p class="command-desc">Start taking a currently active test specified by <code>[test_id]</code>. You will be guided through the questions interactively.</p>
+                </li>
+                 <li>
+                    <p><code>/materials [test_id]</code></p>
+                    <p class="command-desc">Get supplementary materials (if any) for the specified test.</p>
+                </li>
+                 <li>
+                    <p><code>/results</code></p>
+                    <p class="command-desc">View a summary of your own past test attempts and scores.</p>
+                </li>
+                 <li>
+                    <p><code>/show [test_id]</code></p>
+                    <p class="command-desc">View the questions and answer options for a test in a text format (does not indicate correct answers).</p>
+                </li>
+                 <li>
+                    <p><code>/help</code></p>
+                    <p class="command-desc">Show the list of commands available to you.</p>
+                </li>
+            </ul>
+        </div>
+
+        <div id="pane-en-teacher" class="tab-pane lang-pane-en">
+            <h2><span role="img" aria-label="teacher">👩‍🏫</span> Teacher Guide</h2>
+            <p class="intro-text">Teachers can manage their tests, materials, activations, view results for tests they activate, and also take tests.</p>
+            <h3>Test Bank & Material Management</h3>
+             <ul>
+                 <li>
+                    <p><code>/upload</code> (then send CSV file)</p>
+                    <p class="command-desc">Upload or update a test question bank (<code>test<ID>.csv</code>).</p>
+                </li>
+                 <li>
+                    <p><code>/upload [test_id]</code> (then send files)</p>
+                    <p class="command-desc">Upload supplementary materials for an existing test specified by <code>[test_id]</code>.</p>
+                </li>
+                <li>
+                    <p><code>/download [test_id]</code></p>
+                    <p class="command-desc">Download a test bank as CSV.</p>
+                </li>
+                 <li>
+                    <p><code>/list_tests</code></p>
+                    <p class="command-desc">List all available test banks.</p>
+                </li>
+                 <li>
+                    <p><code>/show [test_id]</code></p>
+                    <p class="command-desc">View test questions in printable format.</p>
+                </li>
+                 <li>
+                    <p><code>/materials [test_id]</code></p>
+                    <p class="command-desc">Get supplementary materials for a test.</p>
+                </li>
+                 <li>
+                    <p><strong>CSV Format Details (for <code>/upload</code>):</strong></p>
+                    <p class="command-desc">File must be named <code>test<ID>.csv</code>, UTF-8 encoded, semicolon (<code>;</code>) separated. Each row: <code>Question;CorrectAnswer;Option2;Option3...</code></p>
+                </li>
+            </ul>
+             <h3>Test Activation & Results</h3>
+             <ul>
+                 <li>
+                    <p><code>/act_test [test_id] ...</code></p>
+                    <p class="command-desc">Activate a test, check status, or deactivate it.</p>
+                </li>
+                 <li>
+                    <p><code>/help_act_test</code></p>
+                    <p class="command-desc">Get detailed help and examples for the <code>/act_test</code> command.</p>
+                </li>
+                 <li>
+                    <p><code>/results [test_id]</code></p>
+                    <p class="command-desc">View student results **only for test activations you initiated** for the specified test ID.</p>
+                </li>
+                 <li>
+                    <p><code>/txt [test_id]</code></p>
+                    <p class="command-desc">Get a <code>.txt</code> file with results **only for test activations you initiated**.</p>
+                </li>
+            </ul>
+             <h3>Taking Tests & Own Results</h3>
+             <ul>
+                 <li>
+                    <p><code>/test [test_id]</code></p>
+                    <p class="command-desc">Start taking a currently active test.</p>
+                </li>
+                <li>
+                    <p><code>/results</code></p>
+                    <p class="command-desc">View your own results from tests you have taken.</p>
+                </li>
+                <li>
+                    <p><code>/help</code></p>
+                    <p class="command-desc">Show the list of commands available to you.</p>
+                </li>
+            </ul>
+        </div>
+
+        <div id="pane-en-admin" class="tab-pane lang-pane-en">
+             <h2><span role="img" aria-label="toolbox">🛠️</span> Administrator Guide</h2>
+             <p class="intro-text">Administrators have full control over the bot, users, and tests.</p>
+             <h3>User Management</h3>
+            <ul>
+                <li>
+                    <p><code>/add_admin [username]</code></p>
+                    <p class="command-desc">Promote an existing user to Administrator.</p>
+                </li>
+                <li>
+                    <p><code>/remove_admin [username]</code></p>
+                    <p class="command-desc">Demote an Administrator to Student (cannot remove self or last admin).</p>
+                </li>
+                 <li>
+                    <p><code>/list_admins</code></p>
+                    <p class="command-desc">List all Administrators.</p>
+                </li>
+                 <li>
+                    <p><code>/add_teacher [username]</code></p>
+                    <p class="command-desc">Promote an existing user to Teacher (using @username).</p>
+                </li>
+                 <li>
+                    <p><code>/add_teacher_by_id [user_id]</code></p>
+                    <p class="command-desc">Promote an existing user to Teacher (using numerical ID).</p>
+                </li>
+                <li>
+                    <p><code>/remove_teacher [username]</code></p>
+                    <p class="command-desc">Demote a Teacher to Student.</p>
+                </li>
+                 <li>
+                    <p><code>/list_teachers</code></p>
+                    <p class="command-desc">List all Teachers.</p>
+                </li>
+            </ul>
+             <h3>Test Bank & Material Management</h3>
+             <ul>
+                <li>
+                    <p><code>/upload</code> (then send CSV file)</p>
+                    <p class="command-desc">Upload/update a test bank (<code>test<ID>.csv</code>). See format details below.</p>
+                </li>
+                 <li>
+                    <p><code>/upload [test_id]</code> (then send files)</p>
+                    <p class="command-desc">Upload supplementary materials for test <code>[test_id]</code>.</p>
+                </li>
+                <li>
+                    <p><code>/download [test_id]</code></p>
+                    <p class="command-desc">Download test bank as CSV.</p>
+                </li>
+                 <li>
+                    <p><code>/delete_test [test_id]</code></p>
+                    <p class="command-desc">Delete test bank and associated data (if no results exist).</p>
+                 </li>
+                 <li>
+                    <p><code>/list_tests</code></p>
+                    <p class="command-desc">List all loaded test banks.</p>
+                </li>
+                 <li>
+                    <p><code>/show [test_id]</code></p>
+                    <p class="command-desc">View test questions in printable format.</p>
+                </li>
+                 <li>
+                    <p><code>/materials [test_id]</code></p>
+                    <p class="command-desc">Get supplementary materials for a test.</p>
+                </li>
+                 <li>
+                    <p><strong>CSV Format Details (for <code>/upload</code>):</strong></p>
+                    <p class="command-desc">File must be named <code>test<ID>.csv</code>, UTF-8 encoded, semicolon (<code>;</code>) separated. Each row: <code>Question;CorrectAnswer;Option2;Option3...</code></p>
+                </li>
+            </ul>
+             <h3>Test Activation & Results</h3>
+             <ul>
+                 <li>
+                    <p><code>/act_test [test_id] ...</code></p>
+                    <p class="command-desc">Activate a test, check status, or deactivate it.</p>
+                </li>
+                 <li>
+                    <p><code>/help_act_test</code></p>
+                    <p class="command-desc">Get detailed help for <code>/act_test</code>.</p>
+                </li>
+                 <li>
+                    <p><code>/results [test_id]</code></p>
+                    <p class="command-desc">View all results for the specified test ID.</p>
+                </li>
+                 <li>
+                    <p><code>/txt [test_id]</code></p>
+                    <p class="command-desc">Get a <code>.txt</code> file with all results for the test ID.</p>
+                </li>
+                <li>
+                    <p><code>/help</code></p>
+                    <p class="command-desc">Show the list of commands available to you.</p>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Russian Content Panes -->
+         <div id="pane-ru-student" class="tab-pane lang-pane-ru">
+            <h2><span role="img" aria-label="student">🎓</span> Руководство Студента</h2>
+             <p class="intro-text">Будучи студентом, вы можете проходить доступные тесты и просматривать свои результаты.</p>
+             <h3>Прохождение тестов и просмотр материалов/результатов</h3>
+             <ul>
+                 <li>
+                    <p><code>/test [ID_теста]</code></p>
+                    <p class="command-desc">Начать прохождение активного в данный момент теста с указанным <code>[ID_теста]</code>. Бот будет задавать вопросы интерактивно.</p>
+                </li>
+                 <li>
+                    <p><code>/materials [ID_теста]</code></p>
+                    <p class="command-desc">Получить дополнительные материалы (если есть) для указанного теста.</p>
+                </li>
+                 <li>
+                    <p><code>/results</code></p>
+                    <p class="command-desc">Просмотреть сводку своих прошлых попыток и оценок.</p>
+                </li>
+                 <li>
+                    <p><code>/show [ID_теста]</code></p>
+                    <p class="command-desc">Просмотреть вопросы и варианты ответов для теста в текстовом формате (правильные ответы не указываются).</p>
+                </li>
+                 <li>
+                    <p><code>/help</code></p>
+                    <p class="command-desc">Показать список доступных вам команд.</p>
+                </li>
+            </ul>
+        </div>
+
+         <div id="pane-ru-teacher" class="tab-pane lang-pane-ru">
+            <h2><span role="img" aria-label="teacher">👩‍🏫</span> Руководство Преподавателя</h2>
+             <p class="intro-text">Преподаватели могут управлять своими тестами, материалами, активациями, просматривать результаты тестов, которые они активировали, а также сами проходить тесты.</p>
+             <h3>Управление тестами и материалами</h3>
+             <ul>
+                 <li>
+                    <p><code>/upload</code> (затем отправить CSV файл)</p>
+                    <p class="command-desc">Загрузить или обновить банк вопросов теста (<code>test<ID>.csv</code>).</p>
+                </li>
+                 <li>
+                    <p><code>/upload [ID_теста]</code> (затем отправить файлы)</p>
+                    <p class="command-desc">Загрузить дополнительные материалы для существующего теста <code>[ID_теста]</code>.</p>
+                </li>
+                <li>
+                    <p><code>/download [ID_теста]</code></p>
+                    <p class="command-desc">Скачать банк вопросов в формате CSV.</p>
+                </li>
+                 <li>
+                    <p><code>/list_tests</code></p>
+                    <p class="command-desc">Список всех доступных банков тестов.</p>
+                </li>
+                 <li>
+                    <p><code>/show [ID_теста]</code></p>
+                    <p class="command-desc">Просмотреть вопросы теста в формате для печати.</p>
+                </li>
+                 <li>
+                    <p><code>/materials [ID_теста]</code></p>
+                    <p class="command-desc">Получить дополнительные материалы для теста.</p>
+                </li>
+                 <li>
+                    <p><strong>Детали формата CSV (для <code>/upload</code>):</strong></p>
+                    <p class="command-desc">Файл должен называться <code>test<ID>.csv</code>, кодировка UTF-8, разделитель - точка с запятой (<code>;</code>). Каждая строка: <code>Вопрос;ПравильныйОтвет;Вариант2;Вариант3...</code></p>
+                </li>
+            </ul>
+             <h3>Активация тестов и результаты</h3>
+             <ul>
+                 <li>
+                    <p><code>/act_test [ID_теста] ...</code></p>
+                    <p class="command-desc">Активировать тест, проверить статус или деактивировать его.</p>
+                </li>
+                 <li>
+                    <p><code>/help_act_test</code></p>
+                    <p class="command-desc">Получить подробную справку и примеры для команды <code>/act_test</code>.</p>
+                </li>
+                 <li>
+                    <p><code>/results [ID_теста]</code></p>
+                    <p class="command-desc">Просмотреть результаты студентов **только для тех активаций теста, которые вы запустили** для указанного ID теста.</p>
+                </li>
+                 <li>
+                    <p><code>/txt [ID_теста]</code></p>
+                    <p class="command-desc">Получить файл <code>.txt</code> с результатами **только для тех активаций теста, которые вы запустили**.</p>
+                </li>
+            </ul>
+             <h3>Прохождение тестов и свои результаты</h3>
+             <ul>
+                 <li>
+                    <p><code>/test [ID_теста]</code></p>
+                    <p class="command-desc">Начать прохождение активного в данный момент теста.</p>
+                </li>
+                <li>
+                    <p><code>/results</code></p>
+                    <p class="command-desc">Просмотреть свои результаты по тестам, которые вы прошли.</p>
+                </li>
+                <li>
+                    <p><code>/help</code></p>
+                    <p class="command-desc">Показать список доступных вам команд.</p>
+                </li>
+            </ul>
+        </div>
+
+         <div id="pane-ru-admin" class="tab-pane lang-pane-ru">
+            <h2><span role="img" aria-label="toolbox">🛠️</span> Руководство Администратора</h2>
+             <p class="intro-text">Администраторы имеют полный контроль над ботом, пользователями и тестами.</p>
+             <h3>Управление пользователями</h3>
+            <ul>
+                <li>
+                    <p><code>/add_admin [username]</code></p>
+                    <p class="command-desc">Назначить существующего пользователя Администратором.</p>
+                </li>
+                <li>
+                    <p><code>/remove_admin [username]</code></p>
+                    <p class="command-desc">Понизить Администратора до Студента (нельзя удалить себя или последнего админа).</p>
+                </li>
+                 <li>
+                    <p><code>/list_admins</code></p>
+                    <p class="command-desc">Список всех Администраторов.</p>
+                </li>
+                 <li>
+                    <p><code>/add_teacher [username]</code></p>
+                    <p class="command-desc">Назначить существующего пользователя Преподавателем (по @username).</p>
+                </li>
+                 <li>
+                    <p><code>/add_teacher_by_id [user_id]</code></p>
+                    <p class="command-desc">Назначить существующего пользователя Преподавателем (по числовому ID).</p>
+                </li>
+                <li>
+                    <p><code>/remove_teacher [username]</code></p>
+                    <p class="command-desc">Понизить Преподавателя до Студента.</p>
+                </li>
+                 <li>
+                    <p><code>/list_teachers</code></p>
+                    <p class="command-desc">Список всех Преподавателей.</p>
+                </li>
+            </ul>
+             <h3>Управление тестами и материалами</h3>
+             <ul>
+                <li>
+                    <p><code>/upload</code> (затем отправить CSV)</p>
+                    <p class="command-desc">Загрузить/обновить банк вопросов (<code>test<ID>.csv</code>). См. детали формата ниже.</p>
+                </li>
+                 <li>
+                    <p><code>/upload [ID_теста]</code> (затем отправить файлы)</p>
+                    <p class="command-desc">Загрузить доп. материалы для теста <code>[ID_теста]</code>.</p>
+                </li>
+                <li>
+                    <p><code>/download [ID_теста]</code></p>
+                    <p class="command-desc">Скачать банк вопросов в CSV.</p>
+                </li>
+                 <li>
+                    <p><code>/delete_test [ID_теста]</code></p>
+                    <p class="command-desc">Удалить банк вопросов и связанные данные (если нет результатов).</p>
+                 </li>
+                 <li>
+                    <p><code>/list_tests</code></p>
+                    <p class="command-desc">Список всех загруженных банков тестов.</p>
+                </li>
+                 <li>
+                    <p><code>/show [ID_теста]</code></p>
+                    <p class="command-desc">Просмотреть вопросы теста в формате для печати.</p>
+                </li>
+                 <li>
+                    <p><code>/materials [ID_теста]</code></p>
+                    <p class="command-desc">Получить доп. материалы для теста.</p>
+                </li>
+                 <li>
+                    <p><strong>Детали формата CSV (для <code>/upload</code>):</strong></p>
+                    <p class="command-desc">Файл должен называться <code>test<ID>.csv</code>, кодировка UTF-8, разделитель - точка с запятой (<code>;</code>). Каждая строка: <code>Вопрос;ПравильныйОтвет;Вариант2;Вариант3...</code></p>
+                </li>
+            </ul>
+             <h3>Активация тестов и результаты</h3>
+             <ul>
+                 <li>
+                    <p><code>/act_test [ID_теста] ...</code></p>
+                    <p class="command-desc">Активировать тест, проверить статус или деактивировать его.</p>
+                </li>
+                 <li>
+                    <p><code>/help_act_test</code></p>
+                    <p class="command-desc">Получить подробную справку по <code>/act_test</code>.</p>
+                </li>
+                 <li>
+                    <p><code>/results [ID_теста]</code></p>
+                    <p class="command-desc">Просмотреть все результаты для указанного ID теста.</p>
+                </li>
+                 <li>
+                    <p><code>/txt [ID_теста]</code></p>
+                    <p class="command-desc">Получить файл <code>.txt</code> со всеми результатами для ID теста.</p>
+                </li>
+                <li>
+                    <p><code>/help</code></p>
+                    <p class="command-desc">Показать список доступных вам команд.</p>
+                </li>
+            </ul>
+        </div>
+    </div> <!-- /#content-area -->
+
+</div><!-- /.container -->
+
+<script>
+    let currentLang = 'en'; // Default language
+    let currentTab = 'student'; // Default tab
+
+    const langToggleBtn = document.getElementById('lang-toggle-btn');
+    const langToggleTextSpan = document.getElementById('lang-toggle-text');
+
+    // --- NEW: Function to toggle language ---
+    function toggleLanguage() {
+        currentLang = (currentLang === 'en') ? 'ru' : 'en';
+        updateLanguageToggleText(); // Update the button text
+        showCorrectPane(); // Show the content for the new language/tab
+    }
+
+    // --- NEW: Helper to update the toggle button text ---
+    function updateLanguageToggleText() {
+        if (langToggleTextSpan) {
+            // Correct logic: Show the language you can switch *TO*
+            langToggleTextSpan.textContent = (currentLang === 'en') ? 'Русский' : 'English';
+            // Update title attribute too (this was already correct)
+            langToggleBtn.title = (currentLang === 'en') ? 'Switch to Русский' : 'Сменить на English';
+        }
+    }
+
+    // --- Function to switch tabs (remains the same) ---
+    function switchTab(tab) {
+         if (tab === currentTab) return;
+         currentTab = tab;
+         // Update tab button states
+         document.querySelectorAll('.tab-switcher .control-button').forEach(button => {
+            button.classList.remove('active');
+         });
+         document.getElementById('tab-btn-' + tab)?.classList.add('active');
+         // Update visibility based on current language AND current tab
+         showCorrectPane();
+    }
+
+    // --- Function to show the correct content pane (remains the same) ---
+     function showCorrectPane() {
+        // Hide all tab panes first
+        document.querySelectorAll('.tab-pane').forEach(pane => {
+            pane.style.display = 'none'; // Just hide, active class not strictly needed now for display
+        });
+
+        // Construct the ID of the pane to show
+        const paneId = `pane-${currentLang}-${currentTab}`;
+        const selectedPane = document.getElementById(paneId);
+
+        // Show the selected pane
+        if (selectedPane) {
+            selectedPane.style.display = 'block';
+        } else {
+            console.error("Could not find pane with ID:", paneId);
+        }
+    }
+
+    // Set initial state on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        // Set defaults (already defined above)
+        // Update the language toggle button text based on initial language
+        updateLanguageToggleText();
+        // Activate the initial tab button and show the correct initial pane
+        document.getElementById('tab-btn-' + currentTab)?.classList.add('active');
+        showCorrectPane();
+    });
+</script>
+
+</body>
+</html>
