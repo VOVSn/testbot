@@ -66,3 +66,36 @@ if LOG_LEVEL not in valid_log_levels:
          f'Invalid LOG_LEVEL: {LOG_LEVEL}.'
          f' Must be one of {", ".join(valid_log_levels)}'
      )
+
+
+# --- Webhook Settings ---
+WEBHOOK_DOMAIN = os.getenv('WEBHOOK_DOMAIN') # e.g., testbot.mydomain.com
+WEBHOOK_PATH = os.getenv('WEBHOOK_PATH', '/telegram-webhook') # e.g., /your-secret-webhook-path
+WEBHOOK_URL = f"https://{WEBHOOK_DOMAIN}{WEBHOOK_PATH}" if WEBHOOK_DOMAIN else None
+WEBHOOK_SECRET_TOKEN = os.getenv('WEBHOOK_SECRET_TOKEN') # For X-Telegram-Bot-Api-Secret-Token header
+
+# --- RabbitMQ Settings ---
+RABBITMQ_DEFAULT_USER = os.getenv('RABBITMQ_DEFAULT_USER', 'guest')
+RABBITMQ_DEFAULT_PASS = os.getenv('RABBITMQ_DEFAULT_PASS', 'guest')
+RABBITMQ_HOST = os.getenv('RABBITMQ_HOST', 'rabbitmq') # Docker service name
+RABBITMQ_PORT = os.getenv('RABBITMQ_PORT', '5672')
+RABBITMQ_VHOST = os.getenv('RABBITMQ_VHOST', '/')
+RABBITMQ_URL = f"amqp://{RABBITMQ_DEFAULT_USER}:{RABBITMQ_DEFAULT_PASS}@{RABBITMQ_HOST}:{RABBITMQ_PORT}{RABBITMQ_VHOST}"
+RABBITMQ_QUEUE_NAME = os.getenv('RABBITMQ_QUEUE_NAME', 'telegram_updates_queue')
+
+# --- FastAPI Settings ---
+FASTAPI_INTERNAL_HOST = os.getenv('FASTAPI_INTERNAL_HOST', '0.0.0.0')
+FASTAPI_INTERNAL_PORT = int(os.getenv('FASTAPI_INTERNAL_PORT', '8000'))
+
+# --- Celery Settings (placeholders, will be used more in next phase) ---
+CELERY_BROKER_URL = RABBITMQ_URL # Celery uses RabbitMQ as broker
+REDIS_HOST = os.getenv('REDIS_HOST', 'redis')
+REDIS_PORT = int(os.getenv('REDIS_PORT', '6379'))
+REDIS_DB = int(os.getenv('REDIS_DB', '0'))
+CELERY_RESULT_BACKEND = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+
+
+# --- Validation for new vars ---
+if WEBHOOK_DOMAIN: # Only validate if domain is set, implying webhook mode
+    if not WEBHOOK_URL.startswith("https://"):
+        raise ValueError("WEBHOOK_URL must start with https://")

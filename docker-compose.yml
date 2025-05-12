@@ -1,20 +1,68 @@
 services:
-  # --- Telegram Bot Service ---
-  telegram-bot:
-    build: .
-    container_name: testbot-app
+  # --- FastAPI Webhook Server ---
+  fastapi-app:
+    build:
+      context: .
+      dockerfile: Dockerfile # We'll create this Dockerfile next
+    container_name: testbot-fastapi
+    restart: unless-stopped
     env_file:
       - .env
+    # We don't expose ports directly to the host here,
+    # Nginx on the host will proxy to this container's internal port.
+    # ports:
+    #   - "${FASTAPI_INTERNAL_PORT}:${FASTAPI_INTERNAL_PORT}" # Only if not using Nginx on host
     volumes:
-      - ./:/app
-    restart: unless-stopped
+      - ./:/app # For development; consider removing or making read-only for prod
     depends_on:
-      mongo-db: # Bot depends on MongoDB being ready
-        condition: service_healthy # Wait for mongo-db to be healthy
+      - rabbitmq # FastAPI needs RabbitMQ to publish messages
+      # - mongo-db # FastAPI doesn't directly connect to MongoDB in this phase
+    networks:
+      - testbot_default # Ensure it's on the same network as RabbitMQ & Nginx (if Nginx is dockerized)
 
-  # --- MongoDB Service ---
+  # --- Telegram Bot (Old Polling App - WILL BE REMOVED/REPURPOSED for Celery worker) ---
+  # We comment this out or remove it as polling is no longer used.
+  # The bot's logic will move to Celery workers.
+  # telegram-bot:
+  #   build: . # Uses the same Dockerfile initially
+  #   container_name: testbot-app
+  #   env_file:
+  #     - .env
+  #   volumes:
+  #     - ./:/app
+  #   restart: unless-stopped
+  #   depends_on:
+  #     mongo-db:
+  #       condition: service_healthy
+  #   networks:
+  #     - testbot_default
+
+  # --- RabbitMQ Service ---
+  rabbitmq:
+    image: rabbitmq:3.12-management # Includes management plugin
+    container_name: testbot-rabbitmq
+    hostname: rabbitmq # For DNS resolution within Docker network
+    restart: unless-stopped
+    ports:
+      - "5672:5672"   # AMQP port
+      - "15672:15672" # Management UI port (access via http://<vps-ip>:15672)
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+      # RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST} # Usually '/' is fine
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq # Persist RabbitMQ data
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - testbot_default
+
+  # --- MongoDB Service (Unchanged from your working version) ---
   mongo-db:
-    image: mongo:6.0
+    image: mongo:4.4
     container_name: testbot-mongo
     restart: unless-stopped
     ports:
@@ -25,33 +73,42 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASS}
     healthcheck:
-      test: echo 'db.runCommand("ping").ok' | mongosh --quiet --username ${MONGO_USER} --password ${MONGO_PASS} --authenticationDatabase admin
+      test: echo 'db.runCommand("ping").ok' | mongo --quiet --username ${MONGO_USER} --password ${MONGO_PASS} --authenticationDatabase admin
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
+    networks:
+      - testbot_default
 
-  # --- Mongo Express Service (Web UI for MongoDB) ---
+  # --- Mongo Express Service (Unchanged) ---
   mongo-express:
     image: mongo-express
     container_name: testbot-mongo-express
     restart: unless-stopped
     ports:
-      - "8082:8081" # Access via http://localhost:8082
+      - "8082:8081"
     environment:
-      ME_CONFIG_MONGODB_SERVER: mongo-db # Connects to the mongo-db service
+      ME_CONFIG_MONGODB_SERVER: mongo-db
       ME_CONFIG_MONGODB_PORT: 27017
-      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USER} # Use admin credentials
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USER}
       ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASS}
-      ME_CONFIG_MONGODB_AUTH_DATABASE: admin # Database for admin authentication
-      # ME_CONFIG_MONGODB_DATABASE: ${MONGO_DB_NAME} # Optional: default database to connect to
-      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USER:-admin} # Default to 'admin' if not set in .env
-      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASS:-password} # Default to 'password' if not set in .env
-      ME_CONFIG_MONGODB_ENABLE_ADMIN: "true" # Allows admin operations if true
+      ME_CONFIG_MONGODB_AUTH_DATABASE: admin
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USER:-admin}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASS:-password}
+      ME_CONFIG_MONGODB_ENABLE_ADMIN: "true"
     depends_on:
       mongo-db:
-        condition: service_healthy # Wait for mongo-db to be healthy
+        condition: service_healthy
+    networks:
+      - testbot_default
 
 volumes:
   mongo-data:
     driver: local
+  rabbitmq-data: # For RabbitMQ persistence
+    driver: local
+
+networks: # Define a custom network
+  testbot_default:
+    driver: bridge
